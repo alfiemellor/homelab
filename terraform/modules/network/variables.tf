@@ -1,0 +1,9 @@
+variable "compartment_id" {}
+variable "cidr_block" {}
+variable "vcn_name" {}
+variable "dns_label" {}
+variable "subnet_cidr_block" {}
+variable "subnet_name" {}
+variable "subnet_dns_label" {}
+variable "internet_gateway_name" {}
+variable "route_table_name" {}

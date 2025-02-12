@@ -1,5 +1,6 @@
-operator:
-  enabled: true
 connect:
-  credentials:
-    secretName: 1password-connect-credentials
+  create: true
+  credentialsName: op-credentials
+  credentialsKey: 1password-credentials.json
+operator:
+  create: true

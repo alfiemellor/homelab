@@ -1,0 +1,5 @@
+operator:
+  enabled: true
+connect:
+  credentials:
+    secretName: 1password-connect-credentials

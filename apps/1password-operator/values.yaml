@@ -1,3 +1,5 @@
+namespace: 1password
+createNamspace: true
 connect:
   create: true
   credentialsName: op-credentials

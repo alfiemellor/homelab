@@ -1,0 +1,11 @@
+oauth:
+  clientId: 
+    valueFrom:
+      secretKeyRef:
+        name: tailscale-oauth-client-id
+        key: clientId
+  clientSecret: 
+    valueFrom:
+      secretKeyRef:
+        name: tailscale-oauth-client-secret
+        key: clientSecret

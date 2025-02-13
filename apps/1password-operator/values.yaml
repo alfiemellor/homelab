@@ -6,4 +6,4 @@ operator:
   create: true
   token:
     name: op-token
-    value: op-token 
+    key: op-token

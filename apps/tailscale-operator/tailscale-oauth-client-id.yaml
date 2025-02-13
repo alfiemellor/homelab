@@ -1,7 +1,0 @@
-apiVersion: onepassword.com/v1
-kind: OnePasswordItem
-metadata:
-  name: tailscale-oauth-client-id
-  namespace: tailscale
-spec:
-  itemPath: "vaults/Kubernetes/items/tailscale-oauth-client-id"

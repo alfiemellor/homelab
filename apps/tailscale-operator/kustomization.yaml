@@ -1,22 +1,5 @@
 resources:
-  - tailscale-oauth-client-id.yaml
-  - tailscale-oauth-client-secret.yaml
-  - operator-oauth.yaml
-
-patches:
-  - target:
-      kind: Secret
-      name: operator-oauth
-      namespace: tailscale
-    patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: operator-oauth
-        namespace: tailscale
-      stringData:
-        client_id: secretRef:tailscale-oauth-client-id:password
-        client_secret: secretRef:tailscale-oauth-client-secret:password
+  - secret.yaml
 
 helmCharts:
   - name: tailscale-operator

@@ -3,5 +3,3 @@ connect:
   create: true
   credentialsName: op-credentials
   credentialsKey: 1password-credentials.json
-operator:
-  create: true

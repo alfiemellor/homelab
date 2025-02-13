@@ -1,6 +1,5 @@
 connect:
   create: true
-  credentials: op-credentials
 operator:
   create: true
   token:

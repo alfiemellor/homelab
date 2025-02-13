@@ -5,5 +5,5 @@ connect:
 operator:
   create: true
   token:
-    key: op-token
     name: op-token
+    value: op-token 

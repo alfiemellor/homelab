@@ -3,9 +3,9 @@ oauth:
     valueFrom:
       secretKeyRef:
         name: tailscale-oauth-client-id
-        key: clientId
+        key: password
   clientSecret: 
     valueFrom:
       secretKeyRef:
         name: tailscale-oauth-client-secret
-        key: clientSecret
+        key: password

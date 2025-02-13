@@ -1,7 +1,6 @@
 connect:
   create: true
-  credentialsKey: 1password-credentials.json
-  credentialsName: op-credentials
+  credentials: op-credentials
 operator:
   create: true
   token:

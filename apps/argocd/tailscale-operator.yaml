@@ -9,8 +9,6 @@ spec:
     repoURL: https://github.com/alfiemellor/homelab
     path: apps/tailscale-operator
     targetRevision: HEAD
-    kustomize:
-      buildOptions: --enable-helm
   destination:
     server: https://kubernetes.default.svc
     namespace: tailscale

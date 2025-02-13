@@ -1,8 +1,8 @@
-namespace: 1password
 connect:
   create: true
-  credentialsName: op-credentials
   credentialsKey: 1password-credentials.json
+  credentialsName: op-credentials
 operator:
   create: true
-  token: op-credentials
+  token:
+    key: op-token

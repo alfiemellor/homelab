@@ -1,5 +1,6 @@
 resources:
   - secret.yaml
+  - connector.yaml # Tailscale exit node
 
 helmCharts:
   - name: tailscale-operator

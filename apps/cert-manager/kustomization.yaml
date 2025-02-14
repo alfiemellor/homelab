@@ -1,3 +1,6 @@
+resources:
+  - letsencrypt.yaml
+
 helmCharts:
   - name: cert-manager
     repo: https://charts.jetstack.io

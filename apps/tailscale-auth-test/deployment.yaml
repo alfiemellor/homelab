@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-tailscale
+  namespace: tailscale-auth-test
+  labels:
+    app: nginx-tailscale
+spec:
+  selector:
+    matchLabels:
+      app: nginx-tailscale
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: nginx-tailscale
+    spec:
+      containers:
+      - name: nginx-tailscale
+        image: registry.hub.docker.com/clarkezone/tsgunicorn:latest
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 8000

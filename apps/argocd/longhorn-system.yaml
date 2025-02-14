@@ -4,17 +4,17 @@ metadata:
   name: longhorn
   namespace: argocd
 spec:
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
   project: default
-  sources:
-    - chart: longhorn
-      repoURL: https://charts.longhorn.io/
-      targetRevision: v1.8.0
-      helm:
-        valueFiles:
-        - https://raw.githubusercontent.com/alfiemellor/homelab/main/apps/longhorn-system/values.yaml
+  source:
+    repoURL: https://github.com/alfiemellor/homelab
+    path: apps/longhorn
+    targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

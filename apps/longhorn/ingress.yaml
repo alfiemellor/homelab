@@ -10,7 +10,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:
+  - host: longhorn.mellor.dev
+    http:
       paths:
       - path: /
         pathType: Prefix

@@ -5,6 +5,6 @@ helmCharts:
   - name: tailscale-operator
     repo: https://charts.longhorn.io/
     version: v1.8.0
-    releaseName: tailscale-operator
-    namespace: tailscale
+    releaseName: longhorn
+    namespace: longhorn-system
     valuesFile: values.yaml

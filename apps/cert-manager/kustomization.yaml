@@ -1,5 +1,6 @@
 resources:
   - letsencrypt.yaml
+  - secret.yaml
 
 helmCharts:
   - name: cert-manager

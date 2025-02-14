@@ -7,7 +7,7 @@ spec:
   ingressClassName: tailscale
   tls: 
   - hosts:
-    - "longhorn-system"
+    - "longhorn"
   rules:
   - http:
       paths:

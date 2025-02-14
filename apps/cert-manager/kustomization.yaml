@@ -4,4 +4,3 @@ helmCharts:
     version: v1.17.0
     releaseName: cert-manager
     namespace: cert-manager
-    valuesFile: values.yaml

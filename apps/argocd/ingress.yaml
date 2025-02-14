@@ -1,15 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: argocd.mellor.dev
+    kubernetes.io/tls-acme: "true"
   name: argocd
   namespace: argocd
 spec:
-  ingressClassName: tailscale
-  tls: 
-  - hosts:
-    - "argocd"
+  ingressClassName: nginx
   rules:
-  - http:
+  - host: argocd.mellor.dev
+    http:
       paths:
       - path: /
         pathType: Prefix
@@ -17,4 +19,8 @@ spec:
           service:
             name: argocd-server
             port:
-              number: 443
+              number: 80
+  tls: 
+  - secretName: argocd.mellor.dev
+    hosts:
+    - argocd.mellor.dev

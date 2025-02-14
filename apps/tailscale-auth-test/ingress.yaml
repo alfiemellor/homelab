@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx-tailscale
+  name: tailscale-auth-test
   namespace: tailscale-auth-test
   annotations:
     tailscale.com/funnel: "true"
@@ -9,7 +9,7 @@ spec:
   ingressClassName: tailscale
   tls: 
   - hosts:
-    - "nginx-test"
+    - "tailscale-auth-test"
   rules:
   - http:
       paths:
@@ -17,6 +17,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: nginx-tailscale
+            name: tailscale-auth-test
             port:
               number: 8000

@@ -15,6 +15,6 @@ controller:
     controllerValue: k8s.io/external
   watchIngressWithoutClass: false
   metrics:
-    enabled: false
+    enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true

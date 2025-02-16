@@ -1,2 +1,17 @@
 crds:
   enabled: false
+grafana:
+  enabled: true
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      external-dns.alpha.kubernetes.io/hostname: grafana.mellor.dev
+      kubernetes.io/tls-acme: "true"
+    ingressClassName: internal
+    hosts:
+      - grafana.mellor.dev
+    tls:
+      - secretName: grafana.mellor.dev
+        hosts:
+          - grafana.mellor.dev

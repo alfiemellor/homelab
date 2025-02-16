@@ -1,0 +1,11 @@
+controller:
+  config:
+    ssl-redirect: "true"
+    force-ssl-redirect: "true"
+  replicaCount: 3
+  service:
+    type: LoadBalancer
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false

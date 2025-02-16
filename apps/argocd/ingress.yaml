@@ -9,7 +9,7 @@ metadata:
   name: argocd
   namespace: argocd
 spec:
-  ingressClassName: nginx
+  ingressClassName: internal
   rules:
   - host: argocd.mellor.dev
     http:

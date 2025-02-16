@@ -4,9 +4,9 @@ metadata:
   name: tailscale-auth-test
   namespace: tailscale-auth-test
   annotations:
-    tailscale.com/funnel: "true"
+    tailscale.com/funnel: "true" # Technically externally accessible via Tailscale Funnel
 spec:
-  ingressClassName: tailscale
+  ingressClassName: internal
   tls: 
   - hosts:
     - "tailscale-auth-test"

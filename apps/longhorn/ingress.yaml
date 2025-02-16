@@ -8,7 +8,7 @@ metadata:
   name: longhorn
   namespace: longhorn-system
 spec:
-  ingressClassName: nginx
+  ingressClassName: internal
   rules:
   - host: longhorn.mellor.dev
     http:

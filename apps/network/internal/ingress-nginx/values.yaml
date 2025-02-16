@@ -7,6 +7,7 @@ controller:
     type: LoadBalancer
     loadBalancerClass: tailscale
   ingressClassResource:
+    name: internal
     default: false
   watchIngressWithoutClass: false
   metrics:

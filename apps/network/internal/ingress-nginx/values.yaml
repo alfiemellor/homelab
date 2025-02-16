@@ -8,7 +8,8 @@ controller:
     loadBalancerClass: tailscale
   ingressClassResource:
     name: internal
-    default: false
+    default: true
+    controllerValue: k8s.io/internal
   watchIngressWithoutClass: false
   metrics:
     enabled: false

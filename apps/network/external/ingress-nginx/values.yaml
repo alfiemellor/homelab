@@ -12,6 +12,7 @@ controller:
   ingressClassResource:
     name: external
     default: false
+    controllerValue: k8s.io/external
   watchIngressWithoutClass: false
   metrics:
     enabled: false

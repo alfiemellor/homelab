@@ -4,4 +4,4 @@ metadata:
   name: oracle-cloud-controller-manager
 resources:
   - secret.yaml
-  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/v1.0.0/oci-cloud-controller-manager.yaml
+  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/v1.30.0/oci-cloud-controller-manager.yaml

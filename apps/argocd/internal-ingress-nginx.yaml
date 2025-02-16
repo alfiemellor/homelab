@@ -1,13 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx
+  name: internal-ingress-nginx
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/alfiemellor/homelab
-    path: apps/network/ingress-nginx
+    path: apps/network/internal/ingress-nginx
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc

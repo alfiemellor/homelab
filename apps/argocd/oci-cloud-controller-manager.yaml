@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-cloud-controller-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alfiemellor/homelab
+    path: apps/oci-cloud-controller-manager
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

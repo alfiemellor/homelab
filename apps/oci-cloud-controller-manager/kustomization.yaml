@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: oracle-cloud-controller-manager
+resources:
+  - secret.yaml
+  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/v1.0.0/oci-cloud-controller-manager.yaml

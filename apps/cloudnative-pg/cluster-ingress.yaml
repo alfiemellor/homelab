@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: atuin-pg-cluster.mellor.dev
+    kubernetes.io/tls-acme: "true"
+  name: atuin-pg-cluster
+  namespace: default
+spec:
+  ingressClassName: internal
+  rules:
+  - host: atuin-pg-cluster.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atuin-pg-cluster-rw
+            port:
+              number: 5432
+  tls: 
+  - secretName: atuin-pg-cluster.mellor.dev
+    hosts:
+    - atuin-pg-cluster.mellor.dev

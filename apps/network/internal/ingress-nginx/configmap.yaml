@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-services
+  namespace: network
+data:
+  5432: "cnpg-system/atuin-pg-cluster-rw:5432"

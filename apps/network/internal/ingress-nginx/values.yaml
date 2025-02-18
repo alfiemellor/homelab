@@ -6,6 +6,19 @@ controller:
   service:
     type: LoadBalancer
     loadBalancerClass: tailscale
+    ports:
+      - name: http
+        port: 80
+        targetPort: 80
+        protocol: TCP
+      - name: https
+        port: 443
+        targetPort: 443
+        protocol: TCP
+      - name: pgsql
+        port: 5432
+        targetPort: 5432
+        protocol: TCP
   ingressClassResource:
     name: internal
     default: true

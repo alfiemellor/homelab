@@ -1,4 +1,8 @@
+resources:
+  - configmap.yaml
+
 helmCharts:
+
   - name: ingress-nginx
     repo: https://kubernetes.github.io/ingress-nginx
     version: v4.12.0

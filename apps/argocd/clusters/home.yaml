@@ -1,20 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tailscale-auth-test
+  name: home-apps
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/alfiemellor/homelab
-    path: apps/tailscale-auth-test
+    path: apps/overlays/home
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: tailscale-auth-test
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true

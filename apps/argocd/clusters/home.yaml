@@ -1,21 +1,31 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
   name: home-apps
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/alfiemellor/homelab
-    path: apps/overlays/home
-    targetRevision: HEAD
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: argocd
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+  generators:
+    - git:
+        repoURL: https://github.com/alfiemellor/homelab
+        revision: HEAD
+        directories:
+          - path: apps/overlays/home/*
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/alfiemellor/homelab
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

@@ -9,6 +9,8 @@ resources:
   - ../../base/longhorn
   - ../../base/monitoring/prometheus-operator-crds
   - ../../base/monitoring/kube-prometheus-stack
+  - ../../base/network/internal/ingress-nginx  
   - ../../base/network/external-dns
+  - ../../base/network/external/ingress-nginx
   - ../../base/tailscale-auth-test
   - ../../base/tailscale-operator

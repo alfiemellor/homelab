@@ -7,7 +7,8 @@ resources:
   - ../../base/cert-manager
   - ../../base/cloudnative-pg
   - ../../base/longhorn
-  - ../../base/monitoring
+  - ../../base/monitoring/prometheus-operator-crds
+  - ../../base/monitoring/kube-prometheus-stack
   - ../../base/network/external-dns
   - ../../base/tailscale-auth-test
   - ../../base/tailscale-operator

@@ -29,20 +29,22 @@ if [[ "$HOSTNAME" =~ "oci-k3s-server" ]]; then
         sleep 5
     done
 
-    # Install ArgoCD
-    kubectl create namespace argocd
-    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    if [ "{bootstrap_argocd}" = "true" ]; then
+        # Install ArgoCD
+        kubectl create namespace argocd
+        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-    # Patch ArgoCD config map to allow Kustomize to build Helm charts
-    kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
+        # Patch ArgoCD config map to allow Kustomize to build Helm charts
+        kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
 
-    while [[ $(kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l) -gt 1 ]]; do
-        echo "Waiting for ArgoCD to be fully ready..."
-        sleep 10
-    done
+        while [[ $(kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l) -gt 1 ]]; do
+            echo "Waiting for ArgoCD to be fully ready..."
+            sleep 10
+        done
 
-    # Bootstrap ArgoCD applications
-    kubectl apply -f https://raw.githubusercontent.com/alfiemellor/homelab/main/apps/argocd/bootstrap.yaml    
+        # Bootstrap ArgoCD applications
+        kubectl apply -f https://raw.githubusercontent.com/alfiemellor/homelab/main/apps/argocd/bootstrap.yaml
+    fi   
 else
     echo "Starting k3s agent, server IP: ${k3s_server_private_ip}"
     until (curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" K3S_URL="https://${k3s_server_private_ip}:6443" sh -s); do

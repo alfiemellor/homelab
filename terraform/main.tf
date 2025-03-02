@@ -39,6 +39,7 @@ module "oci_k3s_server" {
   image_id              = "ocid1.image.oc1.uk-london-1.aaaaaaaaa6i2x65thpjcpl7taflmywa7v4loqdorvb4alcsues3pkoil6g3q"
   ssh_authorized_key    = var.ssh_authorized_key
   cluster_token         = random_string.k3s_token.result
+  bootstrap_argocd      = false
   freeform_tags         = { Name = "oci-k3s-server" }
 }
 

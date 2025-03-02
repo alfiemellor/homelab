@@ -13,6 +13,10 @@ variable "k3s_server_private_ip" {
   type        = string
   default     = ""
 }
+variable "bootstrap_argocd" {
+  type    = bool
+  default = false
+}
 variable "freeform_tags" {
   type    = map(string)
   default = {}

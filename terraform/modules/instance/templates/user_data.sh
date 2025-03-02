@@ -33,6 +33,9 @@ if [[ "$HOSTNAME" =~ "oci-k3s-server" ]]; then
     kubectl create namespace argocd
     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
+    # Patch ArgoCD config map to allow Kustomize to build Helm charts
+    kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
+
     while [[ $(kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l) -gt 1 ]]; do
         echo "Waiting for ArgoCD to be fully ready..."
         sleep 10

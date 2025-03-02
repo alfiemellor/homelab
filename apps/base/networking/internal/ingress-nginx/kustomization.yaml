@@ -2,6 +2,6 @@ helmCharts:
   - name: ingress-nginx
     repo: https://kubernetes.github.io/ingress-nginx
     version: v4.12.0
-    releaseName: external-ingress-nginx
-    namespace: network
+    releaseName: internal-ingress-nginx
+    namespace: networking
     valuesFile: values.yaml

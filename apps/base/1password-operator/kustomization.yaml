@@ -3,7 +3,7 @@ kind: Kustomization
 
 helmCharts:
   - name: connect
-    repo: https://cloudnative-pg.github.io/charts
+    repo: https://1password.github.io/connect-helm-charts
     version: 1.17.0
     releaseName: 1password
     namespace: 1password

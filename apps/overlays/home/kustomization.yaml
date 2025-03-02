@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - ../../base/1password-operator
   - ../../base/argocd
-  - ../../base/argocd
   - ../../base/cert-manager
   - ../../base/cloudnative-pg
   - ../../base/longhorn

@@ -6,7 +6,7 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: longhorn.mellor.dev
     kubernetes.io/tls-acme: "true"
   name: longhorn
-  namespace: longhorn-system
+  namespace: longhorn
 spec:
   ingressClassName: internal
   rules:

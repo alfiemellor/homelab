@@ -6,5 +6,5 @@ helmCharts:
     repo: https://charts.longhorn.io/
     version: v1.8.0
     releaseName: longhorn
-    namespace: longhorn-system
+    namespace: longhorn
     valuesFile: values.yaml

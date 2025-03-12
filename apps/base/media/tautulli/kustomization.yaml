@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: media
 
 resources:
-  - namespace.yaml
-  - plex
-  - tautulli
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - pvc.yaml

@@ -18,9 +18,6 @@ spec:
         app: sonarr
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
 
@@ -34,7 +31,7 @@ spec:
               mountPath: /run
           securityContext:
             runAsUser: 0  # Run as root for this init container
-            
+
       containers:
         - name: sonarr
           image: ghcr.io/linuxserver/sonarr:latest
@@ -82,6 +79,9 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
           securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:

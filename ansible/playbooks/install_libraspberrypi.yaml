@@ -1,0 +1,12 @@
+- name: Install libraspberrypi-bin on worker nodes
+  hosts: workers
+  become: true
+  tasks:
+    - name: Update package lists
+      apt:
+        update_cache: yes
+
+    - name: Install libraspberrypi-bin
+      apt:
+        name: libraspberrypi-bin
+        state: present

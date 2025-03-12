@@ -7,16 +7,6 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/hostname: plex.mellor.dev
     kubernetes.io/tls-acme: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"  # Allow unlimited upload size
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header Host $host;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Original-URL $request_uri;
-      proxy_read_timeout 600;
-      proxy_connect_timeout 600;
-      proxy_send_timeout 600;
 spec:
   ingressClassName: internal
   rules:

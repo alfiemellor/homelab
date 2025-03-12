@@ -14,7 +14,7 @@ if [[ "$HOSTNAME" =~ "oci-k3s-server" ]]; then
     SERVER_PUBLIC_IP=$(curl -s ifconfig.io)
     SERVER_PRIVATE_IP=$(hostname -I | awk '{print $1}')
     echo "Starting k3s server, node IP: $SERVER_PRIVATE_IP, and external IP: $SERVER_PUBLIC_IP"
-    curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" sh -s - server --node-ip=$SERVER_PRIVATE_IP --node-external-ip=$SERVER_PUBLIC_IP --tls-san=$SERVER_PRIVATE_IP --tls-san=$SERVER_PUBLIC_IP --cluster-init --disable traefik
+    curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" sh -s - server --node-ip=$SERVER_PRIVATE_IP --node-external-ip=$SERVER_PUBLIC_IP --tls-san=$SERVER_PRIVATE_IP --tls-san=$SERVER_PUBLIC_IP --cluster-init --disable traefik --disable servicelb --disable local-storage
     
     # Wait for Kubernetes API to be available
     while ! kubectl get nodes; do sleep 5; done

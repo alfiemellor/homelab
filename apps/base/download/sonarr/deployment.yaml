@@ -45,6 +45,8 @@ spec:
               mountPath: /media
             - name: media
               mountPath: /downloads
+            - name: run-dir
+              mountPath: /run
           resources:
             requests:
               cpu: 50m

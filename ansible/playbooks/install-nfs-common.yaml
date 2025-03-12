@@ -1,0 +1,9 @@
+- name: Install NFS client on all nodes
+  hosts: all
+  become: true
+  tasks:
+    - name: Install NFS client packages
+      package:
+        name: nfs-common
+        state: present
+      when: ansible_os_family == "Debian"

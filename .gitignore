@@ -6,5 +6,10 @@
 .terraform/
 .terraform.lock.hcl
 
+# Ansible files
+*.retry
+ansible/inventory.yaml
+ansible/ansible.cfg
+
 # Other
 *.DS_Store

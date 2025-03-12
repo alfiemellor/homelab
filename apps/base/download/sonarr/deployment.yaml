@@ -80,3 +80,5 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: sonarr-media
+        - name: run-dir
+          emptyDir: {}

@@ -3,5 +3,4 @@ kind: Kustomization
 
 resources:
   - ../../../base/networking/internal/ingress-nginx
-  - ../../../base/networking/external/ingress-nginx
   - ../../../base/networking/external-dns

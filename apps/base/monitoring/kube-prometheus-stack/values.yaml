@@ -1,5 +1,7 @@
 crds:
   enabled: false
+defaultRules:
+  create: true
 grafana:
   enabled: true
   ingress:

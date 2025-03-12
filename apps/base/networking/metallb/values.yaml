@@ -1,0 +1,6 @@
+crds:
+  enabled: true
+controller:
+  logLevel: info
+speaker:
+  logLevel: info

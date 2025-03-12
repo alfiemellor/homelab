@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarr
+  namespace: media
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: sonarr.mellor.dev
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: sonarr.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: plex
+            port:
+              number: 8989
+  tls: 
+  - secretName: sonarr.mellor.dev
+    hosts:
+    - sonarr.mellor.dev

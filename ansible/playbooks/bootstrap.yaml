@@ -1,0 +1,75 @@
+---
+- name: Install ArgoCD and bootstrap applications
+  hosts: master
+  become: true
+  tasks:
+    - name: Ensure kubectl is working
+      command: kubectl get nodes
+      register: kubectl_result
+      changed_when: false
+      until: kubectl_result is succeeded
+      retries: 10
+      delay: 5
+
+    - name: Create argocd namespace
+      command: kubectl create namespace argocd
+      register: ns_result
+      changed_when: ns_result.rc == 0
+      failed_when: ns_result.rc != 0 and "AlreadyExists" not in ns_result.stderr
+
+    - name: Install ArgoCD
+      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      register: argocd_install
+      changed_when: argocd_install.rc == 0
+
+    - name: Configure ArgoCD for kustomize with helm
+      command: kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
+      register: patch_result
+      changed_when: patch_result.rc == 0
+      failed_when: patch_result.rc != 0 and "not found" not in patch_result.stderr
+      retries: 5
+      delay: 10
+      until: patch_result is succeeded
+
+    - name: Wait for ArgoCD pods to be ready
+      shell: kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l
+      register: argocd_pods
+      changed_when: false
+      until: argocd_pods.stdout | trim | int <= 1
+      retries: 30
+      delay: 10
+
+    - name: Get repository path
+      command: git rev-parse --show-toplevel
+      register: repo_path
+      changed_when: false
+      become: false
+      delegate_to: localhost
+
+    - name: Get home app of apps manifest path
+      set_fact:
+        app_of_apps_path: "{{ repo_path.stdout }}/apps/argocd/clusters/home.yaml"
+
+    - name: Bootstrap app of apps
+      command: kubectl apply -f "{{ app_of_apps_path }}"
+      register: bootstrap_result
+      changed_when: bootstrap_result.rc == 0
+      delegate_to: localhost
+      become: false
+
+    - name: Display ArgoCD admin password
+      shell: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+      register: argocd_password
+      changed_when: false
+
+    - name: Output ArgoCD access information
+      debug:
+        msg: 
+          - "ArgoCD has been successfully installed"
+          - "Username: admin"
+          - "Password: {{ argocd_password.stdout }}"
+          - "To access the UI, run: kubectl port-forward svc/argocd-server -n argocd 8080:443"
+          - "Then navigate to https://localhost:8080"
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: sonarr
-  namespace: media
+  namespace: download
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/hostname: sonarr.mellor.dev
@@ -17,7 +17,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: plex
+            name: sonarr
             port:
               number: 8989
   tls: 

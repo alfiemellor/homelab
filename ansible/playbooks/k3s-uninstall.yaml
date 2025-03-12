@@ -1,0 +1,54 @@
+---
+- name: Uninstall k3s from workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Check if k3s-agent-uninstall.sh exists
+      stat:
+        path: /usr/local/bin/k3s-agent-uninstall.sh
+      register: agent_uninstall_script
+
+    - name: Run k3s agent uninstall script
+      shell: /usr/local/bin/k3s-agent-uninstall.sh
+      when: agent_uninstall_script.stat.exists
+      
+    - name: Clean up any leftover k3s directories on workers
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/rancher/k3s
+        - /var/lib/rancher/k3s
+        - /var/lib/kubelet
+        - /var/lib/cni
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Uninstall k3s from master
+  hosts: master
+  become: true
+  tasks:
+    - name: Check if k3s-uninstall.sh exists
+      stat:
+        path: /usr/local/bin/k3s-uninstall.sh
+      register: server_uninstall_script
+
+    - name: Run k3s server uninstall script
+      shell: /usr/local/bin/k3s-uninstall.sh
+      when: server_uninstall_script.stat.exists
+      
+    - name: Clean up any leftover k3s directories on master
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/rancher/k3s
+        - /var/lib/rancher/k3s
+        - /var/lib/kubelet
+        - /var/lib/cni
+        - /var/lib/rancher/k3s/server
+        - ~/.kube/config
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,51 @@
+- name: Install k3s cluster
+  hosts: master
+  become: true
+  tasks:
+    - name: Download and install k3s on master
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik --disable servicelb --disable local-storage" sh -
+      args:
+        creates: /etc/rancher/k3s/k3s.yaml
+
+    - name: Get k3s token
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: k3s_token
+      changed_when: false
+
+    - name: Get master node IP
+      command: hostname -I
+      register: master_ip
+      changed_when: false
+
+    - name: Label master node
+      command: kubectl label node k3s-01 role=master arch=x86 --overwrite
+      changed_when: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Install k3s agent on workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Download and install k3s agent
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['k3s-01']['master_ip'].stdout.split()[0] }}:6443 K3S_TOKEN={{ hostvars['k3s-01']['k3s_token'].stdout }} sh -
+      args:
+        creates: /etc/rancher/k3s/k3s.yaml
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Label worker nodes from master
+  hosts: master
+  become: true
+  tasks:
+    - name: Label worker nodes
+      command: kubectl label node {{ item }} role=worker node-role.kubernetes.io/worker=true arch=arm64 --overwrite
+      with_items: "{{ groups['workers'] }}"
+      changed_when: false
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

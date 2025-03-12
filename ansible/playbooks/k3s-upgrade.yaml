@@ -1,0 +1,81 @@
+---
+- name: Gather facts from all hosts
+  hosts: all
+  tasks:
+    - name: Get current k3s version
+      shell: k3s --version | awk '{print $3}'
+      register: current_version
+      changed_when: false
+      ignore_errors: true
+
+- name: Upgrade k3s on master
+  hosts: master
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    k3s_version: "{{ k3s_target_version | default('') }}"
+    version_arg: "{{ (k3s_version != '') | ternary('INSTALL_K3S_VERSION=' + k3s_version, '') }}"
+  
+  tasks:
+    - name: Show current master version
+      debug:
+        msg: "Current K3s version on master: {{ hostvars[inventory_hostname].current_version.stdout }}"
+    
+    - name: Upgrade k3s on master
+      shell: |
+        curl -sfL https://get.k3s.io | {{ version_arg }} INSTALL_K3S_EXEC="--disable traefik --disable servicelb --disable local-storage" sh -
+      register: upgrade_result
+
+    - name: Wait for k3s to restart
+      pause:
+        seconds: 30
+    
+    - name: Get new master version
+      shell: k3s --version | awk '{print $3}'
+      register: new_version
+      changed_when: false
+      
+    - name: Show upgrade result
+      debug:
+        msg: "Upgraded from {{ hostvars[inventory_hostname].current_version.stdout }} to {{ new_version.stdout }}"
+    
+    - name: Get master node IP
+      command: hostname -I
+      register: master_ip
+      changed_when: false
+
+    - name: Get k3s token
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: k3s_token
+      changed_when: false
+
+- name: Upgrade k3s on workers
+  hosts: workers
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    k3s_version: "{{ k3s_target_version | default('') }}"  
+    version_arg: "{{ (k3s_version != '') | ternary('INSTALL_K3S_VERSION=' + k3s_version, '') }}"
+  
+  tasks:
+    - name: Show current worker version
+      debug:
+        msg: "Current K3s version on {{ inventory_hostname }}: {{ hostvars[inventory_hostname].current_version.stdout }}"
+      
+    - name: Upgrade k3s agent on worker
+      shell: |
+        curl -sfL https://get.k3s.io | {{ version_arg }} K3S_URL=https://{{ hostvars['k3s-01']['master_ip'].stdout.split()[0] }}:6443 K3S_TOKEN={{ hostvars['k3s-01']['k3s_token'].stdout }} sh -
+      register: upgrade_result
+      
+    - name: Wait for agent to restart
+      pause:
+        seconds: 15
+        
+    - name: Get new worker version
+      shell: k3s --version | awk '{print $3}'
+      register: new_version
+      changed_when: false
+      
+    - name: Show upgrade result
+      debug:
+        msg: "Upgraded {{ inventory_hostname }} from {{ hostvars[inventory_hostname].current_version.stdout }} to {{ new_version.stdout }}"

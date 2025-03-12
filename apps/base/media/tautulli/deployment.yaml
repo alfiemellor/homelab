@@ -17,6 +17,12 @@ spec:
       labels:
         app: tautulli
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: tautulli
           image: ghcr.io/onedr0p/tautulli:2.15.1@sha256:2d5a1bce27a8e29e287aec1735001e68fc23dea08806c7124587cdbfaf0ddcff
@@ -59,8 +65,10 @@ spec:
             periodSeconds: 15
           securityContext:
             allowPrivilegeEscalation: false
-            runAsUser: 1000
-            runAsGroup: 1000
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: config
           persistentVolumeClaim:

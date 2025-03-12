@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: media
+  labels:
+    app: plex
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plex
+  template:
+    metadata:
+      labels:
+        app: plex
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: arch
+                operator: In
+                values:
+                - x86
+      containers:
+      - name: plex
+        image: plexinc/pms-docker:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: plex
+          containerPort: 32400
+        env:
+        - name: TZ
+          value: "Europe/London"
+        - name: PLEX_CLAIM
+          value: ""
+        - name: ADVERTISE_IP
+          value: "https://plex.mellor.dev"
+        - name: PLEX_UID
+          value: "1000"
+        - name: PLEX_GID
+          value: "1000"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: transcode
+          mountPath: /transcode
+        - name: media
+          mountPath: /data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "3000m"
+        securityContext:
+          allowPrivilegeEscalation: false
+        readinessProbe:
+          httpGet:
+            path: /web/index.html
+            port: 32400
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /web/index.html
+            port: 32400
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: plex-config
+      - name: transcode
+        persistentVolumeClaim:
+          claimName: plex-transcode
+      - name: media
+        persistentVolumeClaim:
+          claimName: plex-media

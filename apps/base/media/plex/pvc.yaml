@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: plex-nfs-media
+  labels:
+    type: nfs
+    app: plex
+spec:
+  capacity:
+    storage: 11000Gi  # Adjust based on your actual storage size
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 192.168.1.100
+    path: /mnt/vol1/media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-media
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""  # Empty to use static provisioning
+  resources:
+    requests:
+      storage: 11000Gi  # Must match PV capacity
+  selector:
+    matchLabels:
+      type: nfs
+      app: plex
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-config
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-transcode
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi

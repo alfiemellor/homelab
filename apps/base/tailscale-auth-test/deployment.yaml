@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: tailscale-auth-test
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:

@@ -1,15 +1,19 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: PersistentVolume
 metadata:
-  name: sonarr-config
-  namespace: download
+  name: sonarr-nfs-media
+  labels:
+    type: nfs
+    app: sonarr
 spec:
+  capacity:
+    storage: 10936Gi
   accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 5Gi
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 192.168.1.100
+    path: /mnt/vol1/media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,8 +26,21 @@ spec:
   storageClassName: ""
   resources:
     requests:
-      storage: 11000Gi
+      storage: 10936Gi
   selector:
     matchLabels:
       type: nfs
-      app: plex
+      app: sonarr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-config
+  namespace: download
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi

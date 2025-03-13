@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: download
 
 resources:
-  - namespace.yaml
-  - sonarr
-  - radarr
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - pvc.yaml

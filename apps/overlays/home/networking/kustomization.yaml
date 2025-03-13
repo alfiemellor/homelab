@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../base/networking/metallb
+  - ../../../base/networking/external-dns
   - ../../../base/networking/internal/ingress-nginx
   - ../../../base/networking/external/ingress-nginx
-  - ../../../base/networking/external-dns
+  - ../../../base/networking/external/cloudflare-ddns

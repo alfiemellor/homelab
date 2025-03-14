@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scdl
+  labels:
+    app: scdl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scdl
+  template:
+    metadata:
+      labels:
+        app: scdl
+    spec:
+      containers:
+      - name: scdl
+        image: alfiemellor/scdl:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: downloads
+          mountPath: /app/downloads
+      volumes:
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: scdl-downloads-pvc

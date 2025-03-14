@@ -51,13 +51,17 @@ spec:
           mountPath: /transcode
         - name: media
           mountPath: /data
+        - name: dev-dri
+          mountPath: /dev/dri
         resources:
           requests:
             memory: "2Gi"
             cpu: "1000m"
+            intel.com/gpu: "1"
           limits:
             memory: "4Gi"
             cpu: "3000m"
+            intel.com/gpu: "1"
         securityContext:
           allowPrivilegeEscalation: false
         readinessProbe:
@@ -82,3 +86,6 @@ spec:
       - name: media
         persistentVolumeClaim:
           claimName: plex-media
+      - name: dev-dri
+        hostPath:
+          path: /dev/dri

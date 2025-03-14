@@ -20,7 +20,7 @@ helmCharts:
     namespace: kube-system
     valuesInline:
       deployNodeFeatureRule: false
-      sharedDevNum: 2
+      sharedDevNum: 2 
       dpdk:
         enabled: false
       monitoring:

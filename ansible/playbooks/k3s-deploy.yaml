@@ -21,6 +21,10 @@
     - name: Label master node
       command: kubectl label node k3s-01 role=master arch=x86 --overwrite
       changed_when: false
+    
+    - name: Label node with Intel GPU feature flag
+      command: kubectl label node k3s-01 intel.feature.node.kubernetes.io/gpu=true --overwrite
+      changed_when: true
 
   vars:
     ansible_python_interpreter: /usr/bin/python3

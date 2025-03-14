@@ -8,6 +8,10 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: scdl.mellor.dev
     external-dns.alpha.kubernetes.io/target: external.mellor.dev
     kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"
 spec:
   ingressClassName: external
   rules:

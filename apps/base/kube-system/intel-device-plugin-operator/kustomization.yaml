@@ -27,3 +27,4 @@ helmCharts:
         enabled: true
       devicePlugin:
         enable: true
+        resourceManager: false

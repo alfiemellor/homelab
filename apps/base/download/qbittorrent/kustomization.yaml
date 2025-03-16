@@ -4,8 +4,7 @@ kind: Kustomization
 namespace: download
 
 resources:
-  - namespace.yaml
-  - sonarr
-  - radarr
-  - scdl
-  - qbittorrent
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - pvc.yaml

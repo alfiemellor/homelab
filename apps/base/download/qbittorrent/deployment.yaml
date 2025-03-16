@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qbittorrent
+  namespace: download
+  labels:
+    app: qbittorrent
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: qbittorrent
+  template:
+    metadata:
+      labels:
+        app: qbittorrent
+    spec:
+      containers:
+      - name: qbittorrent
+        image: ghcr.io/onedr0p/qbittorrent:5.0.4@sha256:3b7e6671b4e6b8ab1366ca8a038776638c77cc8110dc74c257eb14568d43c614
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: bittorrent-tcp
+          containerPort: 50413
+          protocol: TCP
+        - name: bittorrent-udp
+          containerPort: 50413
+          protocol: UDP
+        env:
+        - name: TZ
+          value: "Europe/London"
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: UMASK
+          value: "022"
+        - name: QBT_WEBUI_PORT
+          value: "8080"
+        - name: QBT_BT_PORT
+          value: "50413"
+        - name: QBT_DOWNLOADS_LOCATION
+          value: "/media/Downloads"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: media
+          mountPath: /media
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: qbittorrent-config
+      - name: media
+        persistentVolumeClaim:
+          claimName: qbittorent-media-nfs

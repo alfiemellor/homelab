@@ -2,6 +2,22 @@ crds:
   enabled: false
 defaultRules:
   create: true
+prometheus:
+  prometheusSpec:
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    retention: 10d
+    scrapeInterval: 10s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    podMonitorSelector: {}
+    probeSelectorNilUsesHelmValues: false
+    probeSelector: {}
 grafana:
   enabled: true
   ingress:

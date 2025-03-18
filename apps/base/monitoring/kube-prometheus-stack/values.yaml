@@ -2,24 +2,11 @@ crds:
   enabled: false
 defaultRules:
   create: true
-prometheus:
-  prometheusSpec:
-    resources:
-      requests:
-        memory: 1Gi
-        cpu: 500m
-      limits:
-        memory: 2Gi
-        cpu: 1000m
-    retention: 10d
-    scrapeInterval: 10s
-    serviceMonitorSelectorNilUsesHelmValues: false
-    serviceMonitorSelector: {}
-    podMonitorSelector: {}
-    probeSelectorNilUsesHelmValues: false
-    probeSelector: {}
 grafana:
   enabled: true
+  fullnameOverride: grafana
+  serviceMonitor:
+    enabled: true
   ingress:
     enabled: true
     annotations:
@@ -105,3 +92,26 @@ prometheus-node-exporter:
           sourceLabels:
             - __meta_kubernetes_pod_node_name
           targetLabel: kubernetes_node
+prometheusOperator:
+  enabled: true
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 50Mi
+      limits:
+        memory: 100Mi
+prometheus:
+  enabled: true
+  prometheusSpec:
+    replicas: 1
+    replicaExternalLabelName: "replica"
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    retention: 12h
+    enableAdminAPI: true
+    walCompression: true
+    scrapeInterval: 10s
+    evaluationInterval: 10s

@@ -1,5 +1,8 @@
 crds:
-  enabled: false
+  enabled: true
+  upgradeJob:
+    enabled: true
+    forceConflicts: true
 defaultRules:
   create: true
   rules:

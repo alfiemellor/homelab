@@ -120,5 +120,5 @@ prometheus:
     retention: 12h
     enableAdminAPI: true
     walCompression: true
-    scrapeInterval: 10s
-    evaluationInterval: 10s
+    scrapeInterval: 30s
+    evaluationInterval: 30s

@@ -116,6 +116,13 @@ prometheus:
   prometheusSpec:
     replicas: 1
     replicaExternalLabelName: "replica"
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 2
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false

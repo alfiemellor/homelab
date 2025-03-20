@@ -86,6 +86,12 @@ kube-state-metrics:
       enabled: true
 prometheus-node-exporter:
   fullnameOverride: node-exporter
+  podLabels:
+    jobLabel: node-exporter
+  service:
+    portName: http-metrics
+    labels:
+      jobLabel: node-exporter
   prometheus:
     monitor:
       enabled: true
@@ -120,8 +126,6 @@ prometheus:
       limits:
         memory: 2Gi
         cpu: 2
-    rbac:
-      create: true
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorSelectorNilUsesHelmValues: true
     podMonitorSelectorNilUsesHelmValues: true

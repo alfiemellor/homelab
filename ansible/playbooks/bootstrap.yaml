@@ -22,7 +22,7 @@
       register: argocd_install
       changed_when: argocd_install.rc == 0
 
-    - name: Configure ArgoCD for kustomize with helm
+    - name: Configure ArgoCD for Kustomize with Helm
       command: kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
       register: patch_result
       changed_when: patch_result.rc == 0
@@ -30,6 +30,15 @@
       retries: 5
       delay: 10
       until: patch_result is succeeded
+
+    - name: Configure ArgoCD instance label key to fix Prometheus metrics
+      command: kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"application.instanceLabelKey":"argocd.argoproj.io/instance"}}'
+      register: label_patch_result
+      changed_when: label_patch_result.rc == 0
+      failed_when: label_patch_result.rc != 0 and "not found" not in label_patch_result.stderr
+      retries: 5
+      delay: 10
+      until: label_patch_result is succeeded
 
     - name: Wait for ArgoCD pods to be ready
       shell: kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l

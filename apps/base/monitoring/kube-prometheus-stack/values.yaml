@@ -124,6 +124,8 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: true
     podMonitorSelectorNilUsesHelmValues: true
     probeSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
     retention: 12h
     enableAdminAPI: true
     walCompression: true

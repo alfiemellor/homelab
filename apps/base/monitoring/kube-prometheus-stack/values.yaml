@@ -95,11 +95,6 @@ prometheus-node-exporter:
   prometheus:
     monitor:
       enabled: true
-      jobLabel: "app.kubernetes.io/name"
-      selector:
-        matchLabels:
-          app.kubernetes.io/instance: monitoring
-          app.kubernetes.io/name: prometheus-node-exporter
       relabelings:
         - action: replace
           regex: (.*)

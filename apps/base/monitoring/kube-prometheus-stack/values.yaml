@@ -121,8 +121,8 @@ prometheus:
         memory: 2Gi
         cpu: 2
     ruleSelectorNilUsesHelmValues: false
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: true
     probeSelectorNilUsesHelmValues: false
     retention: 12h
     enableAdminAPI: true

@@ -120,6 +120,8 @@ prometheus:
       limits:
         memory: 2Gi
         cpu: 2
+    rbac:
+      create: true
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorSelectorNilUsesHelmValues: true
     podMonitorSelectorNilUsesHelmValues: true

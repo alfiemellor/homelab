@@ -7,5 +7,6 @@ resources:
   - namespace.yaml
   - sonarr
   - radarr
+  - prowlarr
   - scdl
   - qbittorrent

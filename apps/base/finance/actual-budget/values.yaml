@@ -1,3 +1,5 @@
+fullnameOverride: actual-budget
+
 replicaCount: 1
 
 strategy:
@@ -51,12 +53,3 @@ persistence:
   accessModes:
     - ReadWriteOnce
   size: 3Gi
-
-volumes: 
-- name: data
-  persistentVolumeClaim:
-    claimName: actualbudget-volume
-
-volumeMounts:
- - name: data
-   mountPath: "/data"

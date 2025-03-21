@@ -19,7 +19,12 @@ ingress:
     - host: ab.mellor.dev
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix
+          backend:
+            service:
+              name: actual-budget
+              port:
+                number: 5006
   tls: 
   - secretName: ab.mellor.dev
     hosts:

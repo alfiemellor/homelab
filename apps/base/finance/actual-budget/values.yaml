@@ -1,0 +1,30 @@
+strategy:
+  type: Recreate
+
+files:
+  server: /data/server-files
+  user: /data/user-files
+
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: ab.mellor.dev
+    kubernetes.io/tls-acme: "true"
+  ingressClassName: internal
+  hosts:
+    - host: ab.mellor.dev
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: 
+  - secretName: ab.mellor.dev
+    hosts:
+    - ab.mellor.dev
+
+persistence:
+  enabled: true
+  storageClass: longhorn
+  accessMode: ReadWriteOnce
+  existingClaim: actualbudget
+  size: 3Gi

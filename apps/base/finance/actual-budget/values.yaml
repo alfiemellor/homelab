@@ -1,17 +1,18 @@
-strategy:
-  type: Recreate
+replicaCount: 1
 
-files:
-  server: /data/server-files
-  user: /data/user-files
+strategy:
+  type: "RollingUpdate"
+  rollingUpdate:
+    maxSurge: "100%"
+    maxUnavailable: 0
 
 ingress:
   enabled: true
+  className: "internal"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/hostname: ab.mellor.dev
     kubernetes.io/tls-acme: "true"
-  ingressClassName: internal
   hosts:
     - host: ab.mellor.dev
       paths:
@@ -22,9 +23,40 @@ ingress:
     hosts:
     - ab.mellor.dev
 
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+files:
+  dataDirectory: /data
+  server: /data/server-files
+  user: /data/user-files
+
 persistence:
   enabled: true
-  storageClass: longhorn
-  accessMode: ReadWriteOnce
-  existingClaim: actualbudget
+  existingClaim: ""
+  storageClass: "longhorn"
+  accessModes:
+    - ReadWriteOnce
   size: 3Gi
+
+volumes: 
+- name: data
+  persistentVolumeClaim:
+    claimName: actualbudget-volume
+
+volumeMounts:
+ - name: data
+   mountPath: "/data"

@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudflare-ddns
+  name: cloudflare-ddns-proxied
   namespace: networking
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cloudflare-ddns
+      app: cloudflare-ddns-proxied
   template:
     metadata:
       labels:
-        app: cloudflare-ddns
+        app: cloudflare-ddns-proxied
     spec:
       containers:
-      - name: cloudflare-ddns
+      - name: cloudflare-ddns-proxied
         image: oznu/cloudflare-ddns:latest
         resources:
           requests:

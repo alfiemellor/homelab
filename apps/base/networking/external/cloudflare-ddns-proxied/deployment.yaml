@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-ddns
+  namespace: networking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-ddns
+  template:
+    metadata:
+      labels:
+        app: cloudflare-ddns
+    spec:
+      containers:
+      - name: cloudflare-ddns
+        image: oznu/cloudflare-ddns:latest
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        env:
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api-token
+              key: apiKey
+        - name: ZONE
+          value: "mellor.dev"
+        - name: SUBDOMAIN
+          value: "proxied"
+        - name: PROXIED
+          value: "true"

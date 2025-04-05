@@ -6,4 +6,5 @@ resources:
   - ../../../base/networking/external-dns
   - ../../../base/networking/internal/ingress-nginx
   - ../../../base/networking/external/ingress-nginx
-  - ../../../base/networking/external/cloudflare-ddns
+  - ../../../base/networking/external/cloudflare-ddns-direct
+  - ../../../base/networking/external/cloudflare-ddns-proxied

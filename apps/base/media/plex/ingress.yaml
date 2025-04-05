@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/hostname: plex.mellor.dev
-    external-dns.alpha.kubernetes.io/target: external.mellor.dev
+    external-dns.alpha.kubernetes.io/target: direct.mellor.dev
     kubernetes.io/tls-acme: "true"
 spec:
   ingressClassName: external

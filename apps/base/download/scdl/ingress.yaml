@@ -6,8 +6,8 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     external-dns.alpha.kubernetes.io/hostname: scdl.mellor.dev
-    external-dns.alpha.kubernetes.io/target: proxied.mellor.dev
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/target: direct.mellor.dev
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
     kubernetes.io/tls-acme: "true"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "900"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "900"

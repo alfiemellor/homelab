@@ -25,7 +25,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: tautulli
-          image: ghcr.io/onedr0p/tautulli:2.15.1@sha256:2d5a1bce27a8e29e287aec1735001e68fc23dea08806c7124587cdbfaf0ddcff
+          image: ghcr.io/home-operations/tautulli:2.15.3@sha256:3e0eaca8c082ebe121a0ae9125bea1b4e2d177fca34ac8df4ec14a28e62f63a4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

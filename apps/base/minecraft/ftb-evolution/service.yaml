@@ -3,11 +3,16 @@ kind: Service
 metadata:
   name: ftb-evolution
   namespace: minecraft
-  labels:
-    app: ftb-evolution
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: ftb.mellor.dev
+    external-dns.alpha.kubernetes.io/target: direct.mellor.dev
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
+  type: LoadBalancer
   ports:
-  - port: 25565
-    targetPort: 25565
+    - port: 25565
+      targetPort: 25565
+      protocol: TCP
+      name: minecraft
   selector:
     app: ftb-evolution

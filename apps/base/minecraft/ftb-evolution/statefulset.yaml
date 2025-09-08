@@ -27,8 +27,12 @@ spec:
           env:
             - name: EULA
               value: "TRUE"
+            - name: MOTD
+              value: "FTB Evolution Server - p.s Kenneth smells"
             - name: MODE
               value: "survival"
+            - name: DIFFICULTY
+              value: "normal"
             - name: TYPE
               value: "FTBA"
             - name: FTB_MODPACK_ID

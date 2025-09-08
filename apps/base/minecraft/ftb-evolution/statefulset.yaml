@@ -54,17 +54,23 @@ spec:
           readinessProbe:
               exec:
                 command:
-                - mcstatus
+                - mc-monitor
+                - status
+                - --host
                 - 127.0.0.1
-                - ping
+                - --port
+                - "25565"
               initialDelaySeconds: 30
               periodSeconds: 30
           livenessProbe:
             exec:
               command:
-              - mcstatus
+              - mc-monitor
+              - status
+              - --host
               - 127.0.0.1
-              - ping
+              - --port
+              - "25565"
             initialDelaySeconds: 30
             periodSeconds: 30
           volumeMounts:

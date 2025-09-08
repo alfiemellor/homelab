@@ -32,7 +32,7 @@ spec:
             - name: TYPE
               value: "FTBA"
             - name: FTB_MODPACK_ID
-              value: 125
+              value: "125"
             - name: INIT_MEMORY
               value: 6G
             - name: MAX_MEMORY

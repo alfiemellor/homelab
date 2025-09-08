@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ftb-evolution
+  namespace: minecraft
+spec:
+  selector:
+    matchLabels:
+      app: ftb-evolution
+  template:
+    metadata:
+      labels:
+        app: ftb-evolution
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: arch
+                operator: In
+                values:
+                - x86
+      containers:
+        - name: minecraft-server
+          image: itzg/minecraft-server:latest
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: MODE
+              value: "survival"
+            - name: TYPE
+              value: "FTBA"
+            - name: FTB_MODPACK_ID
+              value: 125
+            - name: INIT_MEMORY
+              value: 6G
+            - name: MAX_MEMORY
+              value: 8G
+          ports:
+            - name: minecraft
+              containerPort: 25565
+            - name: minecraft-rcon
+              containerPort: 25575
+            - name: metrics
+              containerPort: 19565
+          resources:
+            requests:
+              cpu: 2
+              memory: "6Gi"
+            limits:
+              cpu: 3
+              memory: "8Gi"
+          readinessProbe:
+              exec:
+                command:
+                - mcstatus
+                - 127.0.0.1
+                - ping
+              initialDelaySeconds: 30
+              periodSeconds: 30
+          livenessProbe:
+            exec:
+              command:
+              - mcstatus
+              - 127.0.0.1
+              - ping
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+          - name: minecraft-data
+            mountPath: /data
+      volumes:
+        - name: minecraft-data
+          persistentVolumeClaim:
+            claimName: ftb-evolution-data

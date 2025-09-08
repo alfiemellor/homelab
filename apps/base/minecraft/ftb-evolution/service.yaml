@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ftb-evolution
+  namespace: minecraft
+  labels:
+    app: ftb-evolution
+spec:
+  ports:
+  - port: 25565
+    targetPort: 25565
+  selector:
+    app: ftb-evolution

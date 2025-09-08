@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ftb-evolution
+  namespace: minecraft
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: ftb.mellor.dev
+    external-dns.alpha.kubernetes.io/target: direct.mellor.dev
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: external
+  rules:
+  - host: ftb.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ftb-evolution
+            port:
+              number: 25565
+  tls: 
+  - secretName: ftb.mellor.dev
+    hosts:
+    - ftb.mellor.dev

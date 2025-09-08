@@ -60,7 +60,7 @@ spec:
                 - 127.0.0.1
                 - --port
                 - "25565"
-              initialDelaySeconds: 30
+              initialDelaySeconds: 300
               periodSeconds: 30
           livenessProbe:
             exec:
@@ -71,7 +71,7 @@ spec:
               - 127.0.0.1
               - --port
               - "25565"
-            initialDelaySeconds: 30
+            initialDelaySeconds: 300
             periodSeconds: 30
           volumeMounts:
           - name: minecraft-data

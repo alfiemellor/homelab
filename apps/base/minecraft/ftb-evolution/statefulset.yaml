@@ -41,6 +41,8 @@ spec:
               value: 6G
             - name: MAX_MEMORY
               value: 10G
+            - name: USE_MEOWICE_FLAGS
+              value: "true"
           ports:
             - name: minecraft
               containerPort: 25565

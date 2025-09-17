@@ -43,6 +43,8 @@ spec:
               value: 10G
             - name: USE_MEOWICE_FLAGS
               value: "true"
+            - name: ALLOW_FLIGHT
+              value: "true"
           ports:
             - name: minecraft
               containerPort: 25565

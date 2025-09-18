@@ -28,7 +28,7 @@ spec:
           mountPath: /config
       containers:
       - name: qbittorrent
-        image: ghcr.io/onedr0p/qbittorrent:5.0.4@sha256:3b7e6671b4e6b8ab1366ca8a038776638c77cc8110dc74c257eb14568d43c614
+        image: ghcr.io/home-operations/qbittorrent:5.1.2@sha256:31ac39705e31f7cdcc04dc46c1c0b0cdf8dc6f9865d4894efc097a33adc41524
         ports:
         - name: http
           containerPort: 8080

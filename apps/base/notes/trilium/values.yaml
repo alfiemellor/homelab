@@ -17,11 +17,18 @@ ingress:
       kubernetes.io/tls-acme: "true"
     ingressClassName: internal
     hosts:
-      - trilium.mellor.dev
+      - host: trilium.mellor.dev
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              name: main
+              port:
+                number: 8080
     tls:
-      - secretName: trilium.mellor.dev
-        hosts:
-          - trilium.mellor.dev
+    - secretName: trilium.mellor.dev
+      hosts:
+      - trilium.mellor.dev
 persistence:
   data:
     enabled: true

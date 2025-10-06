@@ -1,0 +1,28 @@
+controllers:
+  main:
+    containers:
+      trilium:
+        image:
+          repository: triliumnext/trilium
+          tag: v0.99.1
+          pullPolicy: IfNotPresent
+      env:
+        key: "value"
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: trilium.mellor.dev
+    kubernetes.io/tls-acme: "true"
+  ingressClassName: internal
+  hosts:
+    - trilium.mellor.dev
+  tls:
+    - secretName: trilium.mellor.dev
+      hosts:
+        - trilium.mellor.dev
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: trilium-data

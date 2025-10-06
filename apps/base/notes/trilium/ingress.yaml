@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trilium
+  namespace: notes
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: trilium.mellor.dev
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: trilium.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: trilium
+            port:
+              number: 8080
+  tls: 
+  - secretName: trilium.mellor.dev
+    hosts:
+    - trilium.mellor.dev

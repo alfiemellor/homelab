@@ -8,27 +8,6 @@ controllers:
           pullPolicy: IfNotPresent
         env:
           key: "value"
-ingress:
-  main:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
-      external-dns.alpha.kubernetes.io/hostname: trilium.mellor.dev
-      kubernetes.io/tls-acme: "true"
-    ingressClassName: internal
-    hosts:
-      - host: trilium.mellor.dev
-        paths:
-          - path: /
-            pathType: Prefix
-            service:
-              name: main
-              port:
-                number: 8080
-    tls:
-    - secretName: trilium.mellor.dev
-      hosts:
-      - trilium.mellor.dev
 persistence:
   data:
     enabled: true

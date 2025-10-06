@@ -8,3 +8,5 @@ helmCharts:
     repo: https://triliumnext.github.io/helm-charts
     namespace: notes
     valuesFile: values.yaml
+resources:
+  - pvc.yaml

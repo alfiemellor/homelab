@@ -33,7 +33,6 @@
     }
   ],
   "prConcurrentLimit": 2,
-  "prCreationLimit": 5,
   "semanticCommits": "enabled",
   "labels": ["renovate"],
   "assignees": ["alfiemellor"]

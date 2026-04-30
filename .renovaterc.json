@@ -8,7 +8,11 @@
     "before 3am on Monday"
   ],
   "kubernetes": {
-    "enabled": true
+    "enabled": true,
+    "managerFilePatterns": [
+      "apps/base/**/*.yaml",
+      "apps/overlays/**/*.yaml"
+    ]
   },
   "docker": {
     "enabled": true,

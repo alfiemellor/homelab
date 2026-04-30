@@ -1,8 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":enableVulnerabilityAlerts"
+    "config:base"
   ],
   "timezone": "UTC",
   "schedule": [
@@ -13,51 +12,29 @@
   },
   "docker": {
     "enabled": true,
-    "automerge": false,
-    "minimumReleaseAge": "7 days"
-  },
-  "registryAliases": {
-    "ghcr": "ghcr.io",
-    "docker": "docker.io"
+    "automerge": false
   },
   "ignorePaths": [
     "ansible/**",
-    "terraform/**",
-    ".github/**"
+    "terraform/**"
   ],
   "packageRules": [
     {
       "description": "Group all image updates together",
       "matchDatasources": ["docker"],
       "groupName": "App Container Images",
-      "groupSlug": "app-images",
-      "schedule": [
-        "before 3am on Monday"
-      ]
+      "groupSlug": "app-images"
     },
     {
       "description": "Update busybox and other utility images separately",
       "matchPackageNames": ["busybox"],
       "groupName": "Utility Images",
       "groupSlug": "utility-images"
-    },
-    {
-      "description": "Require approval for major version bumps",
-      "matchUpdateTypes": ["major"],
-      "assignees": ["@alfiemellor"],
-      "reviewers": ["@alfiemellor"]
-    },
-    {
-      "description": "Auto-merge pre-release and patch updates",
-      "matchUpdateTypes": ["patch"],
-      "automerge": false,
-      "labels": ["renovate/patch"]
     }
   ],
   "prConcurrentLimit": 2,
-  "prCreationLimit": 1,
+  "prCreationLimit": 5,
   "semanticCommits": "enabled",
   "labels": ["renovate"],
-  "assignees": ["alfiemellor"],
-  "reviewers": ["alfiemellor"]
+  "assignees": ["alfiemellor"]
 }

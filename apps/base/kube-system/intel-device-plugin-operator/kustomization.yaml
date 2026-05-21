@@ -5,7 +5,7 @@ namespace: kube-system
 helmCharts:
   - name: intel-device-plugins-operator
     repo: https://intel.github.io/helm-charts
-    version: 0.28.0
+    version: 0.35.0
     releaseName: intel-device-plugins-operator
     namespace: kube-system
     includeCRDs: true

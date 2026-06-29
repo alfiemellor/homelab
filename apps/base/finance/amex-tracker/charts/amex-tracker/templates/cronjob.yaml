@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "amex-tracker.fullname" . }}-sync
+  labels:
+    {{- include "amex-tracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sync
+spec:
+  schedule: {{ .Values.sync.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "amex-tracker.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: sync
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: sync
+              image: {{ .Values.image.backend }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["python", "-m", "scripts.sync"]
+              envFrom:
+                - configMapRef:
+                    name: {{ include "amex-tracker.fullname" . }}-config
+                - secretRef:
+                    name: {{ include "amex-tracker.secretName" . }}
+              env:
+                {{- include "amex-tracker.dbEnv" . | nindent 16 }}

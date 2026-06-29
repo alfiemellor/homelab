@@ -1,0 +1,28 @@
+fullnameOverride: amex-tracker
+
+# Set to your hostname (and match tlsSecretName below). Nothing else in this file
+# is personal — emails and the supplementary cardholder name come from 1Password.
+host: amex.mellor.dev
+
+image:
+  backend: alfiemellor/amex-tracker-backend:1.0
+  frontend: alfiemellor/amex-tracker-frontend:1.0
+
+ingress:
+  className: internal
+  clusterIssuer: letsencrypt
+  tlsSecretName: amex.mellor.dev # match host
+
+auth:
+  enabled: true
+
+# Google / GoCardless / session secrets AND the allow-listed emails + the
+# supplementary cardholder name(s) all come from the OnePasswordItem, synced into
+# the Secret named here. Nothing personal is committed to git.
+existingSecret: amex-tracker-secrets
+
+postgres:
+  enabled: true
+  instances: 1
+  storageClass: longhorn
+  storageSize: 1Gi

@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Same pattern as finance/actual-budget, but the chart is your own so it's
+# vendored locally under ./charts/amex-tracker (copy of the app repo's
+# deploy/helm/amex-tracker). helmGlobals.chartHome makes the local path explicit.
+helmGlobals:
+  chartHome: charts
+
+helmCharts:
+  - name: amex-tracker
+    releaseName: amex-tracker
+    namespace: finance
+    valuesFile: values.yaml
+
+resources:
+  - onepassworditem.yaml

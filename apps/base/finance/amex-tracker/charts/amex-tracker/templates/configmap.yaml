@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "amex-tracker.fullname" . }}-config
+  labels:
+    {{- include "amex-tracker.labels" . | nindent 4 }}
+data:
+  AMEX_AUTH_ENABLED: {{ .Values.auth.enabled | quote }}
+  AMEX_SESSION_HTTPS_ONLY: "true"
+  AMEX_PUBLIC_BASE_URL: "https://{{ .Values.host }}"
+  AMEX_FRONTEND_URL: "https://{{ .Values.host }}"
+  AMEX_GOCARDLESS_REDIRECT_URI: "https://{{ .Values.host }}/api/connections/callback"
+  AMEX_CORS_ORIGINS: "https://{{ .Values.host }}"
+  # Card product names only (not personal). The supplementary cardholder name(s)
+  # and the allow-listed emails are sensitive and live in the Secret instead.
+  AMEX_CARD_NAMES: {{ .Values.app.cardNames | quote }}
+  AMEX_GOCARDLESS_MAX_HISTORICAL_DAYS: {{ .Values.gocardless.maxHistoricalDays | quote }}
+  AMEX_GOCARDLESS_ACCESS_VALID_FOR_DAYS: {{ .Values.gocardless.accessValidForDays | quote }}

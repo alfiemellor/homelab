@@ -1,0 +1,25 @@
+amex-tracker ({{ .Release.Name }}) deployed.
+
+Next steps:
+
+1. DNS — point {{ .Values.host }} at your nginx ingress controller's external IP/LB.
+
+2. TLS — cert-manager will issue a certificate into secret
+   "{{ .Values.ingress.tlsSecretName }}" via ClusterIssuer "{{ .Values.ingress.clusterIssuer }}"
+   (can take a minute on first install).
+
+3. Update OAuth / Open Banking redirect URIs to the production host:
+   - Google OAuth client -> Authorised redirect URI:
+       https://{{ .Values.host }}/api/auth/callback
+   - GoCardless connections use:
+       https://{{ .Values.host }}/api/connections/callback
+
+4. Visit https://{{ .Values.host }} and sign in with Google.
+
+Handy checks:
+  kubectl get pods   -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl get ingress {{ include "amex-tracker.fullname" . }}
+{{- if .Values.postgres.enabled }}
+  kubectl get cluster {{ include "amex-tracker.fullname" . }}-pg   # CloudNativePG
+{{- end }}
+  kubectl logs deploy/{{ include "amex-tracker.fullname" . }}-backend

@@ -1,0 +1,75 @@
+# Overrides the generated resource name prefix (e.g. "amex-tracker").
+fullnameOverride: ""
+
+# Public hostname — DNS must point at your nginx ingress controller.
+host: amex-tracker.example.com
+
+image:
+  backend: alfiemellor/amex-tracker-backend:latest
+  frontend: alfiemellor/amex-tracker-frontend:latest
+  pullPolicy: IfNotPresent
+
+ingress:
+  className: nginx
+  clusterIssuer: letsencrypt-prod # cert-manager ClusterIssuer name
+  tlsSecretName: amex-tracker-tls
+  annotations: {} # any extra ingress annotations
+
+auth:
+  enabled: true
+  ownerEmails: "" # owner Google email(s), full access (prefer the Secret in prod)
+  memberEmails: "" # supplementary cardholder email(s), view + log own payments
+  googleClientId: ""
+  googleClientSecret: ""
+  sessionSecret: "" # generate with: openssl rand -hex 32
+
+gocardless:
+  secretId: ""
+  secretKey: ""
+  maxHistoricalDays: 730
+  accessValidForDays: 90
+
+app:
+  # Sensitive — set via the Secret / OnePasswordItem (existingSecret), not here.
+  supplementaryNames: ""
+  # Optional cards to auto-create on first boot. Leave empty and add cards in the
+  # UI / via sync instead (names are never hardcoded).
+  cardNames: ""
+
+# Provide secrets via a pre-created Secret (e.g. Sealed/External Secrets) instead
+# of templating them from the values above. If set, the chart won't render a Secret.
+# The referenced Secret must contain the AMEX_GOOGLE_*, AMEX_SESSION_SECRET and
+# AMEX_GOCARDLESS_* keys.
+existingSecret: ""
+
+postgres:
+  enabled: true # CloudNativePG operator must be installed in the cluster
+  instances: 1
+  database: amex
+  owner: amex
+  storageSize: 5Gi
+  storageClass: "" # "" = cluster default
+
+# Only used when postgres.enabled=false (external/managed DB).
+externalDatabaseUrl: ""
+
+backend:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+sync:
+  schedule: "0 */6 * * *" # every 6 hours

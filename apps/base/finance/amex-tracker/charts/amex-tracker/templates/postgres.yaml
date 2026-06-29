@@ -1,0 +1,19 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "amex-tracker.fullname" . }}-pg
+  labels:
+    {{- include "amex-tracker.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgres.instances }}
+  storage:
+    size: {{ .Values.postgres.storageSize }}
+    {{- with .Values.postgres.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.database }}
+      owner: {{ .Values.postgres.owner }}
+{{- end }}

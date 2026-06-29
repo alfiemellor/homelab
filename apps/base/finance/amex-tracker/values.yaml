@@ -9,9 +9,11 @@ image:
   frontend: alfiemellor/amex-tracker-frontend:1.0
 
 ingress:
-  className: internal
+  className: external
   clusterIssuer: letsencrypt
   tlsSecretName: amex.mellor.dev # match host
+  annotations:
+    external-dns.alpha.kubernetes.io/target: proxied.mellor.dev
 
 auth:
   enabled: true

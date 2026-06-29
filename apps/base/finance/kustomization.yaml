@@ -4,3 +4,4 @@ kind: Kustomization
 namespace: finance
 resources:
   - actual-budget
+  - amex-tracker

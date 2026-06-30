@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: qui-pg
+  namespace: download
+  labels:
+    app: qui
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: qui
+      owner: qui

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qui
+  namespace: download
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: qui.mellor.dev
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: qui.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: qui
+            port:
+              number: 7476
+  tls:
+  - secretName: qui.mellor.dev
+    hosts:
+    - qui.mellor.dev

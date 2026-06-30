@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qui
+  namespace: download
+  labels:
+    app: qui
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: qui
+  template:
+    metadata:
+      labels:
+        app: qui
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: qui
+          image: ghcr.io/autobrr/qui:v1.22.0@sha256:5d4f98d973129edc3ac04a2b74e3e791c86c5c92ef4d5dae64622be000578e80
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 7476
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/London"
+            - name: QUI__HOST
+              value: "0.0.0.0"
+            - name: QUI__PORT
+              value: "7476"
+            # Use the CloudNativePG cluster (qui-pg) instead of the bundled SQLite.
+            - name: QUI__DATABASE_ENGINE
+              value: "postgres"
+            # Host/port/db are deterministic (CloudNativePG -rw service); only the
+            # credentials come from the operator-generated -app secret.
+            - name: QUI__DATABASE_HOST
+              value: "qui-pg-rw"
+            - name: QUI__DATABASE_PORT
+              value: "5432"
+            - name: QUI__DATABASE_NAME
+              value: "qui"
+            - name: QUI__DATABASE_SSL_MODE
+              value: "disable"
+            - name: QUI__DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: qui-pg-app
+                  key: username
+            - name: QUI__DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qui-pg-app
+                  key: password
+            # Stable encryption key for stored qBittorrent credentials (1Password).
+            - name: QUI__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: qui-secrets
+                  key: QUI__SESSION_SECRET
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: qui-config

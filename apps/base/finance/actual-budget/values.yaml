@@ -3,10 +3,7 @@ fullnameOverride: actual-budget
 replicaCount: 1
 
 strategy:
-  type: "RollingUpdate"
-  rollingUpdate:
-    maxSurge: "100%"
-    maxUnavailable: 0
+  type: "Recreate"
 
 ingress:
   enabled: true

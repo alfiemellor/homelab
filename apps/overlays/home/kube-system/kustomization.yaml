@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - ../../../base/kube-system/intel-device-plugin-operator
+  - ../../../base/kube-system/node-feature-discovery

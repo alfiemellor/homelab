@@ -3,5 +3,6 @@ kind: Kustomization
 
 namespace: home-automation
 resources:
-  - home-assistant
-  - matter-server
+  - deployment.yaml
+  - service.yaml
+  - pvc.yaml

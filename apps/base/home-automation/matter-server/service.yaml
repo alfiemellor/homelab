@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: matter-server
+  namespace: home-automation
+  labels:
+    app: matter-server
+spec:
+  ports:
+    - port: 5580
+      targetPort: 5580
+      name: ws
+  selector:
+    app: matter-server

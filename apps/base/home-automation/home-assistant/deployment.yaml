@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home-automation
+  labels:
+    app: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+    spec:
+      # Home Assistant discovers most consumer smart-home kit (Hue, Shelly, WiZ,
+      # LIFX, Kasa, Chromecast) over mDNS/SSDP/UDP broadcast. None of that crosses
+      # the flannel VXLAN pod network, so HA has to sit directly on the LAN.
+      # Costs: it binds :8123 on the host and is pinned to one node.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      # Bind to the ThinkCentre M910q node only which is x86 (rest of cluster is ARM).
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: arch
+                    operator: In
+                    values:
+                      - x86
+
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        supplementalGroups:
+          - 20
+
+      # Seeds configuration.yaml on first boot only. HA owns /config after that,
+      # so later edits to the ConfigMap will NOT be picked up — change the file in
+      # the PVC (or delete it and restart to re-seed).
+      initContainers:
+        - name: seed-config
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - |
+              [ -f /config/configuration.yaml ] || cp /seed/configuration.yaml /config/configuration.yaml
+              [ -f /config/automations.yaml ] || printf '[]\n' > /config/automations.yaml
+              [ -f /config/scenes.yaml ] || printf '[]\n' > /config/scenes.yaml
+              [ -f /config/scripts.yaml ] || printf '{}\n' > /config/scripts.yaml
+              chown -R 1000:1000 /config
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: seed
+              mountPath: /seed
+          securityContext:
+            runAsUser: 0  # Run as root for this init container
+
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-operations/home-assistant:2026.7.2@sha256:547d0fcb67ceb2c2d3adf22db37c7ea79d9ff9e91f3e3c536c6aebd998083f0f
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8123
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/London"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: zigbee
+              mountPath: /dev/ttyUSB0
+            # Lets HA's usb integration auto-detect the stick and offer ZHA setup.
+            # Without it the dongle still works, you just add ZHA by path by hand.
+            - name: udev
+              mountPath: /run/udev
+              readOnly: true
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+            periodSeconds: 30
+            failureThreshold: 6
+          securityContext:
+            privileged: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: false
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: home-assistant-config
+        - name: seed
+          configMap:
+            name: home-assistant-config-seed
+        - name: zigbee
+          hostPath:
+            path: /dev/ttyUSB0
+            type: CharDevice
+        - name: udev
+          hostPath:
+            path: /run/udev
+            type: Directory

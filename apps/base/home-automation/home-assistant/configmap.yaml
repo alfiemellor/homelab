@@ -1,0 +1,23 @@
+# First-boot seed for /config/configuration.yaml (see the init container in
+# deployment.yaml). The http block is the part that matters: without it HA rejects
+# every request that arrives via ingress-nginx with "400: Forbidden".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-assistant-config-seed
+  namespace: home-automation
+data:
+  configuration.yaml: |
+    default_config:
+
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 10.42.0.0/16    # k3s pod CIDR — where ingress-nginx sits
+        - 192.168.1.0/24  # LAN, for when pod traffic is SNAT'd to the node IP
+        - 127.0.0.1
+        - ::1
+
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml

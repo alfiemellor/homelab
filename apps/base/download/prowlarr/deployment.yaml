@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: prowlarr
-          image: ghcr.io/home-operations/prowlarr:1.32.2.4987@sha256:77f6b6850d6191f68d2d2d4d21655b103acc5c6f6243d8cb62bb75888499b78a
+          image: ghcr.io/home-operations/prowlarr:2.5.1.5464@sha256:5014bec2085b72759570ae958cdee251956c059bf82ca6244a3ce99e1c327a12
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

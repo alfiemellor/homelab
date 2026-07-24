@@ -1,7 +1,5 @@
 fullnameOverride: amex-tracker
 
-# Set to your hostname (and match tlsSecretName below). Nothing else in this file
-# is personal — emails and the supplementary cardholder name come from 1Password.
 host: amex.mellor.dev
 
 image:
@@ -11,7 +9,7 @@ image:
 ingress:
   className: external
   clusterIssuer: letsencrypt
-  tlsSecretName: amex.mellor.dev # match host
+  tlsSecretName: amex.mellor.dev
   annotations:
     external-dns.alpha.kubernetes.io/target: proxied.mellor.dev
 
@@ -28,3 +26,6 @@ postgres:
   instances: 1
   storageClass: longhorn
   storageSize: 1Gi
+
+sync:
+  schedule: "0 */12 * * *" # every 12 hours (chart default is every 6)

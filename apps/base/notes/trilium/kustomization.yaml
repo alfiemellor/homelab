@@ -4,7 +4,7 @@ kind: Kustomization
 helmCharts:
   - name: trilium
     releaseName: trilium
-    version: 1.3.0
+    version: 2.0.0
     repo: https://triliumnext.github.io/helm-charts
     namespace: notes
     valuesFile: values.yaml

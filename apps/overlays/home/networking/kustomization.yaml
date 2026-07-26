@@ -8,3 +8,4 @@ resources:
   - ../../../base/networking/external/ingress-nginx
   - ../../../base/networking/external/cloudflare-ddns-direct
   - ../../../base/networking/external/cloudflare-ddns-proxied
+  - ../../../base/networking/truenas

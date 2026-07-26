@@ -4,7 +4,7 @@ controllers:
       trilium:
         image:
           repository: triliumnext/trilium
-          tag: v0.99.1
+          tag: v0.104.1
           pullPolicy: IfNotPresent
         env:
           key: "value"

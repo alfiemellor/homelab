@@ -4,7 +4,7 @@ kind: Kustomization
 helmCharts:
   - name: ingress-nginx
     repo: https://kubernetes.github.io/ingress-nginx
-    version: v4.12.0
+    version: 4.15.1
     releaseName: external-ingress-nginx
     namespace: networking
     valuesFile: values.yaml

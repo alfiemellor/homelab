@@ -4,6 +4,8 @@ metadata:
   name: ftb-evolution
   namespace: minecraft
 spec:
+  # Server is stopped for now - set to 1 to bring the world back online.
+  replicas: 0
   selector:
     matchLabels:
       app: ftb-evolution
@@ -12,6 +14,8 @@ spec:
       labels:
         app: ftb-evolution
     spec:
+      # Modded pack takes a while to flush chunks to disk on /stop.
+      terminationGracePeriodSeconds: 300
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

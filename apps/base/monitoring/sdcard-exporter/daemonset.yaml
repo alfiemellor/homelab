@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sdcard-exporter
+  labels:
+    app.kubernetes.io/name: sdcard-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sdcard-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sdcard-exporter
+    spec:
+      # Runs on every node. Nodes without an MMC/SD card (k3s-01) simply report
+      # sdcard_exporter_devices 0, so a new Pi joining needs no config change.
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: exporter
+          image: busybox:1.37
+          command: ["sh", "/opt/sdcard-exporter/collect.sh"]
+          env:
+            - name: INTERVAL
+              value: "60"
+          # The MMC error counters live in debugfs, which is mode 0700 root, so
+          # this needs uid 0. It stays otherwise unprivileged: no capabilities,
+          # no privilege escalation, read-only rootfs.
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          volumeMounts:
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: debug
+              mountPath: /host/debug
+              readOnly: true
+            - name: textfile
+              mountPath: /host/textfile
+            - name: script
+              mountPath: /opt/sdcard-exporter
+      volumes:
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: proc
+          hostPath:
+            path: /proc
+        # debugfs is a separate mount under /sys, so it is bind-mounted directly
+        # rather than relying on mount propagation through /sys.
+        - name: debug
+          hostPath:
+            path: /sys/kernel/debug
+        # Shared with node-exporter, which reads *.prom from this directory.
+        - name: textfile
+          hostPath:
+            path: /var/lib/node-exporter/textfile
+            type: DirectoryOrCreate
+        - name: script
+          configMap:
+            name: sdcard-exporter-script

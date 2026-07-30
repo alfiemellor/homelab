@@ -1,0 +1,142 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sdcard-health
+  labels:
+    app.kubernetes.io/name: sdcard-exporter
+spec:
+  groups:
+    - name: sdcard-health
+      rules:
+        # SD cards have no SMART, so controller error counters are the only
+        # direct hardware signal that a card is degrading. These sit at exactly
+        # zero on a healthy card, which makes any increase meaningful.
+        - alert: SDCardControllerErrors
+          expr: increase(sdcard_mmc_errors_total[1h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MMC controller errors on {{ $labels.instance }} ({{ $labels.device }})"
+            description: >-
+              {{ $value | printf "%.0f" }} {{ $labels.type }} error(s) in the last hour on
+              {{ $labels.device }}. These counters are zero on a healthy card, so any
+              increase means the card, the slot contacts, or the power supply is degrading.
+              Plan a replacement and check `dmesg` for mmcblk I/O errors.
+
+        - alert: SDCardControllerErrorsCritical
+          expr: increase(sdcard_mmc_errors_total[1h]) > 10
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SD card failing on {{ $labels.instance }} ({{ $labels.device }})"
+            description: >-
+              {{ $value | printf "%.0f" }} {{ $labels.type }} error(s) in the last hour on
+              {{ $labels.device }}. Sustained MMC errors precede total card failure.
+              Drain the node and replace the card.
+
+        # The classic terminal symptom: ext4 aborts its journal and remounts
+        # read-only. At this point the node is already broken.
+        - alert: SDCardFilesystemReadOnly
+          expr: node_filesystem_readonly{device=~"/dev/mmcblk.+"} == 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SD card filesystem read-only on {{ $labels.instance }}"
+            description: >-
+              {{ $labels.mountpoint }} ({{ $labels.device }}) has remounted read-only.
+              Every write now returns EIO. Check `dmesg` for the originating error,
+              then fsck or replace the card.
+
+        # Latency creep is the most reliable early warning on cards that never
+        # report a hard error: the controller retries internally and the writes
+        # just get slower. It also matters in its own right, because Longhorn
+        # replicas live on these cards and its engine times out on slow I/O.
+        - alert: SDCardWriteLatencyHigh
+          expr: >-
+            rate(node_disk_write_time_seconds_total{device=~"mmcblk[0-9]+"}[30m])
+            / rate(node_disk_writes_completed_total{device=~"mmcblk[0-9]+"}[30m]) > 0.5
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SD card write latency high on {{ $labels.instance }} ({{ $labels.device }})"
+            description: >-
+              Average write latency is {{ $value | printf "%.0f" }}s per operation.
+              Healthy cards in this cluster sit around 0.05-0.07s. Rising latency means
+              the card is doing internal retries and block remapping.
+
+        - alert: SDCardSaturated
+          expr: rate(node_disk_io_time_seconds_total{device=~"mmcblk[0-9]+"}[30m]) > 0.5
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "SD card saturated on {{ $labels.instance }} ({{ $labels.device }})"
+            description: >-
+              The card has been busy {{ $value | humanizePercentage }} of the time for an
+              hour. Sustained saturation both wears the card faster and starves Longhorn
+              replicas, which is how volumes end up aborting their journals.
+
+        # Wear proxy. There is no TBW figure to compare against on a consumer SD
+        # card, so this flags a change in write pressure rather than a hard limit.
+        - alert: SDCardWriteVolumeHigh
+          expr: rate(node_disk_written_bytes_total{device=~"mmcblk[0-9]+"}[6h]) * 86400 > 30e9
+          for: 2h
+          labels:
+            severity: info
+          annotations:
+            summary: "High write volume to SD card on {{ $labels.instance }}"
+            description: >-
+              {{ $value | humanize1024 }}B/day is being written to {{ $labels.device }}.
+              Baseline for this cluster is 3-11 GB/day. Find what started writing and
+              move it off the card if possible.
+
+        - alert: SDCardAgeHigh
+          expr: (time() - sdcard_manufacture_timestamp_seconds) / (365 * 86400) > 5
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "SD card on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }} years old"
+            description: >-
+              {{ $labels.device }} was manufactured over 5 years ago (date is from the
+              card's CID, so it bounds the age from below - the card may have entered
+              service later). Retention loss and wear are cumulative; budget a swap.
+
+        # eMMC only. Inert on plain SD cards, which report no wear registers, but
+        # correct if an eMMC-backed node ever joins.
+        - alert: SDCardPreEOLWarning
+          expr: sdcard_pre_eol_info >= 2
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "eMMC reserved blocks depleting on {{ $labels.instance }}"
+            description: >-
+              pre_eol_info is {{ $value }} (2 = 80% of reserved blocks consumed,
+              3 = urgent). Replace {{ $labels.device }}.
+
+        - alert: SDCardLifetimeExceeded
+          expr: sdcard_life_time_used_percent >= 90
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "eMMC lifetime nearly exhausted on {{ $labels.instance }}"
+            description: >-
+              Estimate {{ $labels.estimate }} reports {{ $value }}% of rated write
+              endurance consumed on {{ $labels.device }}. Replace it.
+
+        - alert: SDCardExporterStalled
+          expr: time() - sdcard_exporter_last_run_timestamp_seconds > 600
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "sdcard-exporter is stale on {{ $labels.instance }}"
+            description: >-
+              No metrics written for over 10 minutes, so SD card health is unmonitored
+              on this node. Check the sdcard-exporter pod.

@@ -88,6 +88,15 @@ prometheus-node-exporter:
   fullnameOverride: node-exporter
   podLabels:
     jobLabel: node-exporter
+  # Picks up the SD card health metrics written by the sdcard-exporter DaemonSet.
+  extraArgs:
+    - --collector.textfile.directory=/host/textfile
+  extraHostVolumeMounts:
+    - name: textfile
+      hostPath: /var/lib/node-exporter/textfile
+      type: DirectoryOrCreate
+      mountPath: /host/textfile
+      readOnly: true
   service:
     portName: http-metrics
     labels:

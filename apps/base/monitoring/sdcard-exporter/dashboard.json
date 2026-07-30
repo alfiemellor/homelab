@@ -1,0 +1,431 @@
+{
+  "title": "SD Card Health",
+  "uid": "sdcard-health",
+  "tags": ["storage", "hardware"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": true,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "How to read this dashboard",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "SD cards expose **no SMART data and no wear registers**, so there is no \"percent worn\" figure to read — `sdcard_health_registers_supported` is 0 on every plain SD card. Judge a card by these proxies instead: **controller errors** (zero on a healthy card, so any non-zero value is significant), **write latency** (healthy cards here sit at 0.05–0.07 s/op; rising latency means internal retries and block remapping), **saturation**, and **age**. A read-only root filesystem means the card has already failed."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Oldest card in service",
+      "description": "Age from the card's CID manufacture date. This bounds the age from below — the card may have entered service later.",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max((time() - sdcard_manufacture_timestamp_seconds) / (365 * 86400))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:y",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 4 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Controller errors (since boot)",
+      "description": "Total MMC host controller errors across all cards. Healthy cards report exactly zero.",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(sdcard_mmc_errors_total)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Read-only filesystems",
+      "description": "An SD-backed filesystem that has remounted read-only. Non-zero means a card has already failed.",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(node_filesystem_readonly{device=~\"/dev/mmcblk.+\"})",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Written since tracking began",
+      "description": "Accumulated across reboots by sdcard-exporter. Starts from zero when the exporter is first deployed.",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sdcard_written_bytes_total",
+          "legendFormat": "{{instance}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "text", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Write volume to SD card",
+      "description": "Wear driver. Lower is better — every gigabyte written consumes finite program/erase cycles.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(node_disk_written_bytes_total{device=~\"mmcblk[0-9]+\"}[1h]) * 86400 / 1e9",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:GB/day",
+          "decimals": 1,
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Average write latency",
+      "description": "The most reliable early warning on cards that never report a hard error. Healthy cards here sit at 0.05–0.07 s/op.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(node_disk_write_time_seconds_total{device=~\"mmcblk[0-9]+\"}[30m]) / rate(node_disk_writes_completed_total{device=~\"mmcblk[0-9]+\"}[30m])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8,
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "red", "value": 0.5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Card utilisation",
+      "description": "Fraction of time the card is busy servicing I/O. Sustained saturation both wears the card and starves Longhorn replicas stored on it.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(node_disk_io_time_seconds_total{device=~\"mmcblk[0-9]+\"}[30m])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "min": 0,
+          "max": 1,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "table",
+      "title": "MMC controller error counters",
+      "description": "Reset to zero on reboot. Any non-zero value is a hardware-level warning.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (instance, type) (sdcard_mmc_errors_total) > 0 or sum by (instance) (sdcard_mmc_errors_total)",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "job": true } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Value", "desc": true }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" } },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              { "id": "displayName", "value": "Errors" }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "table",
+      "title": "Card inventory",
+      "description": "Identity of every MMC/SD card in the cluster. Cards from the same manufacture batch tend to fail around the same time.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sdcard_info",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "(time() - sdcard_manufacture_timestamp_seconds) / (365 * 86400)",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "sdcard_capacity_bytes",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "sdcard_health_registers_supported",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "joinByField", "options": { "byField": "instance", "mode": "outer" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time 1": true, "Time 2": true, "Time 3": true, "Time 4": true,
+              "job 1": true, "job 2": true, "job 3": true, "job 4": true,
+              "__name__ 1": true, "__name__ 2": true, "__name__ 3": true, "__name__ 4": true,
+              "Value #A": true,
+              "device 2": true, "device 3": true, "device 4": true,
+              "oemid": true, "fwrev": true, "hwrev": true
+            },
+            "renameByName": {
+              "instance": "Node",
+              "device 1": "Device",
+              "card_name": "Model",
+              "card_type": "Type",
+              "manfid": "Manufacturer ID",
+              "serial": "Serial",
+              "manufactured": "Manufactured",
+              "Value #B": "Age",
+              "Value #C": "Capacity",
+              "Value #D": "Wear registers"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" } }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Age" },
+            "properties": [
+              { "id": "unit", "value": "suffix:y" },
+              { "id": "decimals", "value": 1 },
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 4 },
+                    { "color": "red", "value": 5 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Capacity" },
+            "properties": [{ "id": "unit", "value": "bytes" }, { "id": "decimals", "value": 1 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Wear registers" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": { "text": "Not supported", "index": 0 },
+                      "1": { "text": "Supported", "index": 1 }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true }
+    }
+  ]
+}

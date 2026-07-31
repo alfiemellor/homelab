@@ -1,0 +1,73 @@
+alloy:
+  configMap:
+    # The config lives in config.alloy and is turned into a hashed ConfigMap by
+    # the configMapGenerator in kustomization.yaml, so editing it rolls the
+    # DaemonSet automatically. Letting the chart generate the ConfigMap instead
+    # would mean embedding the whole config as a YAML string in this file.
+    create: false
+    name: alloy-logs-config
+    key: config.alloy
+
+  # Alloy keeps the read offset for every log file it tails under this path.
+  # The chart's default (/tmp/alloy) is the container's ephemeral writable
+  # layer, so a restarted pod forgets where it was and re-reads each file from
+  # the top - duplicating logs on every config change. A hostPath survives pod
+  # replacement; see controller.volumes.extra below.
+  storagePath: /var/lib/alloy
+
+  mounts:
+    # Mounts the host's /var/log read-only, which covers both /var/log/pods and
+    # /var/log/journal.
+    varlog: true
+    extra:
+      - name: alloy-data
+        mountPath: /var/lib/alloy
+      # sd_journal resolves the local machine's journal by machine-id; without
+      # this the journal source finds nothing to read.
+      - name: machine-id
+        mountPath: /etc/machine-id
+        readOnly: true
+
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  extraPorts:
+    - name: syslog-udp
+      port: 1514
+      targetPort: 1514
+      protocol: UDP
+    - name: syslog-tcp
+      port: 1515
+      targetPort: 1515
+      protocol: TCP
+
+controller:
+  type: daemonset
+  tolerations:
+    - operator: Exists
+  volumes:
+    extra:
+      - name: alloy-data
+        hostPath:
+          path: /var/lib/alloy
+          type: DirectoryOrCreate
+      - name: machine-id
+        hostPath:
+          path: /etc/machine-id
+          type: File
+
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack

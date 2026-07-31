@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-local
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "1"
+  # Forces the replica onto the same node as the pod. Combined with the
+  # `kubernetes.io/hostname: k3s-01` nodeSelector on the Loki StatefulSet this
+  # keeps all log data on k3s-01's NVMe and completely off the SD cards.
+  dataLocality: "strict-local"
+  staleReplicaTimeout: "30"
+  fsType: "ext4"

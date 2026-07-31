@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy-syslog
+  labels:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/component: syslog
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.202
+spec:
+  type: LoadBalancer
+  # Separate from the chart's own Service on purpose: that one carries Alloy's
+  # HTTP UI on 12345, and turning it into a LoadBalancer would put the UI on the
+  # LAN alongside the syslog ports.
+  selector:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/instance: alloy
+  # Preserves the sender's source IP. Under the default (Cluster) every message
+  # arrives looking like it came from a node IP, which makes it impossible to
+  # tell devices apart when their syslog hostname field is unset or wrong.
+  # Safe here because the DaemonSet puts a pod on every node.
+  externalTrafficPolicy: Local
+  ports:
+    # The well-known syslog ports on the outside, unprivileged ports in the
+    # container - so Alloy needs no CAP_NET_BIND_SERVICE.
+    - name: syslog-udp
+      port: 514
+      targetPort: 1514
+      protocol: UDP
+    - name: syslog-tcp
+      port: 601
+      targetPort: 1515
+      protocol: TCP

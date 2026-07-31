@@ -1,0 +1,215 @@
+// Grafana Alloy - log collection for the whole cluster.
+//
+// Three sources feed one Loki endpoint:
+//   1. Kubernetes pod logs   (every container, every namespace)
+//   2. systemd journal       (kernel + kubelet + containerd on each node)
+//   3. syslog over the LAN   (devices that are not in the cluster)
+//
+// This runs as a DaemonSet, so every node reads its own files.
+
+// ---------------------------------------------------------------------------
+// 1. Kubernetes pod logs
+// ---------------------------------------------------------------------------
+
+discovery.kubernetes "pods" {
+  role = "pod"
+
+  // Server-side filter to this node's pods only. Each DaemonSet replica can
+  // only read log files on its own disk, so without this filter all four
+  // replicas would watch all ~111 pods and discard 3/4 of the result - four
+  // times the API server watch traffic for nothing.
+  // K8S_NODE_NAME is injected by the chart from spec.nodeName.
+  selectors {
+    role  = "pod"
+    field = "spec.nodeName=" + sys.env("K8S_NODE_NAME")
+  }
+}
+
+discovery.relabel "pod_logs" {
+  targets = discovery.kubernetes.pods.targets
+
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "pod"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_node_name"]
+    target_label  = "node"
+  }
+
+  // Deliberately namespace/container rather than the app.kubernetes.io/name
+  // label: that label is missing on plenty of pods here, which would collapse
+  // them all into a single job called "<namespace>/".
+  rule {
+    source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+    separator     = "/"
+    target_label  = "job"
+  }
+
+  // Builds the on-disk path. Kubelet writes to
+  //   /var/log/pods/<namespace>_<pod>_<uid>/<container>/<restart-count>.log
+  // and only the uid and container name are known here, so the leading glob
+  // stands in for "<namespace>_<pod>_". The trailing *.log matches the current
+  // file but not the rotated .gz siblings next to it.
+  rule {
+    source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+    separator     = "/"
+    action        = "replace"
+    replacement   = "/var/log/pods/*$1/*.log"
+    target_label  = "__path__"
+  }
+}
+
+local.file_match "pod_logs" {
+  path_targets = discovery.relabel.pod_logs.output
+}
+
+loki.source.file "pod_logs" {
+  targets    = local.file_match.pod_logs.targets
+  forward_to = [loki.process.pod_logs.receiver]
+}
+
+loki.process "pod_logs" {
+  // containerd writes the CRI format: "<rfc3339nano> <stream> <F|P> <message>".
+  // Without this stage every line in Loki would be prefixed with that metadata
+  // and carry Alloy's read time instead of the container's own timestamp.
+  // stage.cri also reassembles lines that the runtime split at 16KB (the "P"
+  // partial marker).
+  stage.cri {}
+
+  // Promote the stream to a label so stderr can be isolated in a query.
+  // Two values only, so this stays cheap cardinality-wise.
+  stage.labels {
+    values = {
+      stream = "",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+// ---------------------------------------------------------------------------
+// 2. systemd journal
+// ---------------------------------------------------------------------------
+//
+// This is the source that carries the kernel ring buffer, which is where the
+// Longhorn failure mode shows up first: "Sense Key: Medium Error" on the iSCSI
+// device followed by "EXT4-fs error ... Remounting filesystem read-only".
+// Those messages never appear in a pod log, so pod logs alone would not have
+// caught any of the 2026 corruption incidents.
+
+loki.relabel "journal" {
+  // Nothing to forward - this block exists purely to expose `.rules` to
+  // loki.source.journal below. An empty forward_to is the documented pattern.
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "node"
+  }
+
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    target_label  = "syslog_identifier"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.source.journal "node" {
+  path = "/var/log/journal"
+
+  // On a cold start, only backfill 12h. The journal on these nodes goes back
+  // ~32 days; without a bound, a fresh Alloy pod would replay all of it and be
+  // rejected wholesale by Loki's reject_old_samples_max_age (168h).
+  max_age = "12h"
+
+  relabel_rules = loki.relabel.journal.rules
+  labels        = { job = "systemd-journal" }
+  forward_to    = [loki.write.default.receiver]
+}
+
+// ---------------------------------------------------------------------------
+// 3. syslog from LAN devices
+// ---------------------------------------------------------------------------
+//
+// Reachable on 192.168.1.202 via the MetalLB service in syslog-service.yaml,
+// which maps the conventional privileged ports to these unprivileged ones:
+//   514/udp  -> 1514  (RFC3164 - what routers, switches and appliances emit)
+//   601/tcp  -> 1515  (RFC5424 - what modern rsyslog/syslog-ng emit)
+// Binding 514 directly would need CAP_NET_BIND_SERVICE for no gain.
+
+loki.relabel "syslog" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    target_label  = "host"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_app_name"]
+    target_label  = "app"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_severity"]
+    target_label  = "level"
+  }
+}
+
+loki.source.syslog "lan" {
+  listener {
+    address       = "0.0.0.0:1514"
+    protocol      = "udp"
+    syslog_format = "rfc3164"
+    labels        = { job = "syslog", protocol = "udp" }
+
+    use_incoming_timestamp = true
+
+    // RFC3164 timestamps carry no year. Without this every message is dated to
+    // year 0 and lands far outside Loki's accepted window.
+    rfc3164_default_to_current_year = true
+  }
+
+  listener {
+    address       = "0.0.0.0:1515"
+    protocol      = "tcp"
+    syslog_format = "rfc5424"
+    labels        = { job = "syslog", protocol = "tcp" }
+
+    use_incoming_timestamp = true
+  }
+
+  relabel_rules = loki.relabel.syslog.rules
+  forward_to    = [loki.write.default.receiver]
+}
+
+// ---------------------------------------------------------------------------
+// Output
+// ---------------------------------------------------------------------------
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+  }
+}

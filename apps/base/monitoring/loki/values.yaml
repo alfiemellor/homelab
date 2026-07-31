@@ -1,0 +1,112 @@
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  storage:
+    type: filesystem
+
+  schemaConfig:
+    configs:
+      - from: "2026-07-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  limits_config:
+    retention_period: 2160h
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    max_cache_freshness_per_query: 10m
+    split_queries_by_interval: 15m
+    query_timeout: 300s
+    volume_enabled: true
+
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+    retention_delete_delay: 2h
+
+  ingester:
+    chunk_encoding: snappy
+
+  querier:
+    max_concurrent: 2
+
+singleBinary:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: k3s-01
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  extraEnv:
+    # Kept under the memory limit so Go starts collecting hard before the
+    # kernel OOM-kills the container.
+    - name: GOMEMLIMIT
+      value: "1750MiB"
+  persistence:
+    enabled: true
+    storageClass: longhorn-local
+    size: 20Gi
+    enableStatefulSetAutoDeletePVC: false
+
+# Zero out every other deployment mode. The chart ships all three topologies and
+# renders whichever has replicas > 0, so these must be explicitly 0 or the
+# SingleBinary pod ends up alongside a half-built scalable deployment.
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+ingester:
+  replicas: 0
+querier:
+  replicas: 0
+queryFrontend:
+  replicas: 0
+queryScheduler:
+  replicas: 0
+distributor:
+  replicas: 0
+compactor:
+  replicas: 0
+indexGateway:
+  replicas: 0
+bloomCompactor:
+  replicas: 0
+bloomGateway:
+  replicas: 0
+bloomPlanner:
+  replicas: 0
+bloomBuilder:
+  replicas: 0
+
+gateway:
+  enabled: false
+
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+test:
+  enabled: false
+lokiCanary:
+  enabled: false
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack

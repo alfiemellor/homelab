@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - syslog-service.yaml
+
+helmCharts:
+  - name: alloy
+    releaseName: alloy
+    version: 1.11.0
+    repo: https://grafana.github.io/helm-charts
+    namespace: monitoring
+    valuesFile: values.yaml
+
+configMapGenerator:
+  # Hashed so the DaemonSet rolls automatically when the config changes -
+  # kustomize rewrites the volume reference in the chart-rendered DaemonSet to
+  # the hashed name. Same pattern as sdcard-exporter's collect.sh.
+  - name: alloy-logs-config
+    files:
+      - config.alloy

@@ -34,6 +34,14 @@ defaultRules:
 grafana:
   enabled: true
   fullnameOverride: grafana
+  nodeSelector:
+    kubernetes.io/hostname: k3s-01
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
   serviceMonitor:
     enabled: true
   ingress:
@@ -127,6 +135,8 @@ prometheus:
   prometheusSpec:
     replicas: 1
     replicaExternalLabelName: "replica"
+    nodeSelector:
+      kubernetes.io/hostname: k3s-01
     resources:
       requests:
         memory: 1Gi

@@ -1,0 +1,593 @@
+{
+  "uid": "longhorn-storage",
+  "title": "Longhorn Storage",
+  "tags": ["storage", "longhorn"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "How to read this dashboard",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "**Only one number decides whether a PVC needs expanding: _Filesystem used %_.** It comes from inside the volume, via the kubelet.\n\n**Longhorn's _actual size_ is not that number.** Longhorn stores each replica as a sparse copy-on-write file. Blocks that get overwritten or deleted stay allocated in older snapshots, and the file never shrinks by itself, so actual size drifts upward over time and can legitimately exceed the volume's provisioned size while the filesystem inside sits nearly empty. Actual size tells you what a replica *costs a node's disk* — see _Node disk_ below. It never tells you the volume is running out of room.\n\n- **Filling up?** → raise `spec.resources.requests.storage` in the homelab repo. Longhorn 1.8 expands attached volumes online. StatefulSet `volumeClaimTemplates` are immutable, so edit the live PVC *and* the template.\n- **Amplified (on disk ≫ actually used)?** → do *not* expand. Longhorn UI → Volume → *Trim Filesystem*, and delete old snapshots.\n- **Node disk filling?** → that is the real ceiling on how far volumes can grow. On the Pi nodes this is the same SD card the OS runs from.\n\nPrometheus retention here is 12h, so time ranges beyond that are empty and the trend panels are deliberately short-window."
+      }
+    },
+
+    {
+      "type": "stat",
+      "title": "Volumes at or above 80% full",
+      "description": "Longhorn PVCs whose filesystem is 80% or more used. These are the ones to resize.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "expr": "count(\n  (\n    100 * kubelet_volume_stats_used_bytes{job=\"kubelet\"}\n    / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"}\n    >= 80\n  )\n  and on (namespace, persistentvolumeclaim)\n  kube_persistentvolumeclaim_info{storageclass=\"longhorn\"}\n) or vector(0)"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Fullest volume",
+      "description": "Highest filesystem utilisation across all Longhorn PVCs.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "expr": "max(\n  (\n    100 * kubelet_volume_stats_used_bytes{job=\"kubelet\"}\n    / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"}\n  )\n  and on (namespace, persistentvolumeclaim)\n  kube_persistentvolumeclaim_info{storageclass=\"longhorn\"}\n)"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Busiest node disk",
+      "description": "Highest Longhorn disk utilisation across nodes. This is the ceiling on total volume growth.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "expr": "max(100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes)"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 75 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Reclaimable (per replica)",
+      "description": "Longhorn's on-disk footprint minus the data the filesystems actually hold, summed over all volumes. This is snapshot retention and unreclaimed blocks. Multiply by the replica count for the true cluster-wide cost.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "expr": "sum(\n  max by (pvc, pvc_namespace) (longhorn_volume_actual_size_bytes)\n  - on (pvc, pvc_namespace)\n  max by (pvc, pvc_namespace) (\n    label_replace(\n      label_replace(\n        kubelet_volume_stats_used_bytes{job=\"kubelet\"},\n        \"pvc\", \"$1\", \"persistentvolumeclaim\", \"(.+)\"\n      ),\n      \"pvc_namespace\", \"$1\", \"namespace\", \"(.+)\"\n    )\n  )\n)"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "text", "value": null }]
+          }
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "bargauge",
+      "title": "Filesystem used % — the resize signal",
+      "description": "Space used inside each Longhorn volume, as the workload sees it. At 80% raise the PVC size in the manifest.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 11, "w": 12, "x": 0, "y": 11 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "expr": "sort_desc(\n  (\n    100 * kubelet_volume_stats_used_bytes{job=\"kubelet\"}\n    / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"}\n  )\n  and on (namespace, persistentvolumeclaim)\n  kube_persistentvolumeclaim_info{storageclass=\"longhorn\"}\n)"
+        }
+      ],
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "minVizWidth": 8,
+        "minVizHeight": 12,
+        "namePlacement": "left",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Inodes used %",
+      "description": "Inodes exhaust independently of bytes. A volume full of small files hits ENOSPC here while df still shows free space. Expanding the PVC adds inodes too.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 11, "w": 12, "x": 12, "y": 11 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "expr": "sort_desc(\n  (\n    100 * kubelet_volume_stats_inodes_used{job=\"kubelet\"}\n    / kubelet_volume_stats_inodes{job=\"kubelet\"}\n  )\n  and on (namespace, persistentvolumeclaim)\n  kube_persistentvolumeclaim_info{storageclass=\"longhorn\"}\n)"
+        }
+      ],
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "minVizWidth": 8,
+        "minVizHeight": 12,
+        "namePlacement": "left",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Filesystem used % over time",
+      "description": "Slope matters more than level. A volume climbing steadily wants a bigger jump than the next round number when you resize it.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "expr": "(\n  100 * kubelet_volume_stats_used_bytes{job=\"kubelet\"}\n  / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"}\n)\nand on (namespace, persistentvolumeclaim)\nkube_persistentvolumeclaim_info{storageclass=\"longhorn\"}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["lastNotNull", "max"], "sortBy": "Last *", "sortDesc": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8,
+            "spanNulls": true,
+            "axisLabel": "used %"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Provisioned vs. on disk vs. actually used",
+      "description": "Provisioned is the PVC size. On disk is Longhorn's actual size for one replica, including snapshots. Actually used is the filesystem's own figure. A high amplification ratio means wasted node disk, not a volume that needs expanding — trim it instead. Blank 'actually used' means the volume is detached.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 31 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace) (longhorn_volume_capacity_bytes)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace) (longhorn_volume_actual_size_bytes)"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace) (\n  label_replace(\n    label_replace(\n      kubelet_volume_stats_used_bytes{job=\"kubelet\"}\n      and on (namespace, persistentvolumeclaim)\n      kube_persistentvolumeclaim_info{storageclass=\"longhorn\"},\n      \"pvc\", \"$1\", \"persistentvolumeclaim\", \"(.+)\"\n    ),\n    \"pvc_namespace\", \"$1\", \"namespace\", \"(.+)\"\n  )\n)"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace) (longhorn_volume_actual_size_bytes)\n/ on (pvc, pvc_namespace)\nmax by (pvc, pvc_namespace) (\n  label_replace(\n    label_replace(\n      kubelet_volume_stats_used_bytes{job=\"kubelet\"},\n      \"pvc\", \"$1\", \"persistentvolumeclaim\", \"(.+)\"\n    ),\n    \"pvc_namespace\", \"$1\", \"namespace\", \"(.+)\"\n  )\n)"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {
+              "pvc_namespace": 0,
+              "pvc": 1,
+              "Value #A": 2,
+              "Value #C": 3,
+              "Value #B": 4,
+              "Value #D": 5
+            },
+            "renameByName": {
+              "pvc_namespace": "Namespace",
+              "pvc": "Volume",
+              "Value #A": "Provisioned",
+              "Value #B": "On disk (per replica)",
+              "Value #C": "Actually used",
+              "Value #D": "Amplification"
+            }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Amplification", "desc": true }] } }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false, "reducer": ["sum"], "countRows": false, "fields": "" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": "Provisioned|On disk \\(per replica\\)|Actually used" },
+            "properties": [
+              { "id": "unit", "value": "bytes" },
+              { "id": "decimals", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Amplification" },
+            "properties": [
+              { "id": "unit", "value": "none" },
+              { "id": "decimals", "value": 1 },
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 2 },
+                    { "color": "red", "value": 5 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "type": "bargauge",
+      "title": "Longhorn disk used % per node",
+      "description": "Longhorn reports usage for the whole filesystem backing its disk path, not just replica data — on every node here that is the OS root partition, so this includes the OS, container images and logs. Filling it takes the node down, not just storage. The Pi nodes are 30.8 GB SD cards.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "legendFormat": "{{node}}",
+          "expr": "sort_desc(100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes)"
+        }
+      ],
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "minVizWidth": 8,
+        "minVizHeight": 12,
+        "namePlacement": "left",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 75 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Longhorn disk free space per node",
+      "description": "Absolute headroom left for new replicas and snapshot growth.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "legendFormat": "{{node}}",
+          "expr": "longhorn_disk_capacity_bytes - longhorn_disk_usage_bytes"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull", "min"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8,
+            "spanNulls": true,
+            "axisLabel": "free"
+          },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "table",
+      "title": "Volume health",
+      "description": "Robustness and attachment state per volume. There are no backups configured on this cluster, so a degraded volume is one failure away from data loss.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 50 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace, node) (longhorn_volume_robustness)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "instant": true,
+          "format": "table",
+          "expr": "max by (pvc, pvc_namespace, node) (longhorn_volume_state)"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {
+              "pvc_namespace": 0,
+              "pvc": 1,
+              "node": 2,
+              "Value #A": 3,
+              "Value #B": 4
+            },
+            "renameByName": {
+              "pvc_namespace": "Namespace",
+              "pvc": "Volume",
+              "node": "Engine node",
+              "Value #A": "Robustness",
+              "Value #B": "State"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false, "reducer": ["sum"], "countRows": false, "fields": "" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Robustness" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": { "text": "Unknown (detached)", "color": "text", "index": 0 },
+                      "1": { "text": "Healthy", "color": "green", "index": 1 },
+                      "2": { "text": "Degraded", "color": "orange", "index": 2 },
+                      "3": { "text": "Faulted", "color": "red", "index": 3 }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "State" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": { "text": "Creating", "index": 0 },
+                      "2": { "text": "Attached", "index": 1 },
+                      "3": { "text": "Detached", "index": 2 },
+                      "4": { "text": "Attaching", "index": 3 },
+                      "5": { "text": "Detaching", "index": 4 },
+                      "6": { "text": "Deleting", "index": 5 }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

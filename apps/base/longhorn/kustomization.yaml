@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ingress.yaml
+  - servicemonitor.yaml
 helmCharts:
   - name: longhorn
     repo: https://charts.longhorn.io/

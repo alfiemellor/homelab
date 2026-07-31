@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+resources:
+  - prometheusrule.yaml
+
+configMapGenerator:
+  # The Grafana sidecar writes each ConfigMap key straight into its dashboard
+  # directory, so the key has to be unique cluster-wide - two ConfigMaps keyed
+  # dashboard.json silently overwrite each other. sdcard-exporter already owns
+  # that name.
+  - name: longhorn-dashboard
+    files:
+      - longhorn.json
+    options:
+      labels:
+        grafana_dashboard: "1"

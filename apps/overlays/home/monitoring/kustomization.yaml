@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - ../../../base/monitoring/kube-prometheus-stack
   - ../../../base/monitoring/sdcard-exporter
+  - ../../../base/monitoring/longhorn

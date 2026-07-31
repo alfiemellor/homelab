@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: longhorn
+  namespace: longhorn
+  labels:
+    app.kubernetes.io/name: longhorn
+    # Required for discovery. kube-prometheus-stack's values set
+    # serviceMonitorSelector: {} intending "select everything", but because
+    # serviceMonitorSelectorNilUsesHelmValues is true and an empty map is falsy,
+    # the chart still renders a selector of release=kube-prometheus-stack.
+    # Without this label the ServiceMonitor is silently ignored.
+    release: kube-prometheus-stack
+spec:
+  # longhorn-backend is the only Service labelled app=longhorn-manager, and it
+  # fronts every longhorn-manager pod. Scraping it via Endpoints matters: each
+  # manager only reports the volumes whose engine runs on its own node, so a
+  # single load-balanced scrape would return a partial view of the cluster.
+  selector:
+    matchLabels:
+      app: longhorn-manager
+  namespaceSelector:
+    matchNames:
+      - longhorn
+  endpoints:
+    - port: manager
+      path: /metrics
+      interval: 30s

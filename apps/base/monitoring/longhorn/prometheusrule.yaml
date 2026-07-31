@@ -1,0 +1,218 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-storage
+  labels:
+    app.kubernetes.io/name: longhorn
+spec:
+  groups:
+    # ---------------------------------------------------------------------
+    # Filesystem fullness - the only signal that means "resize the PVC".
+    #
+    # These read kubelet_volume_stats, which is the filesystem's own view from
+    # inside the volume. Longhorn's own "actual size" is a different thing (see
+    # the space-amplification group below) and must NOT be used to decide
+    # whether a volume needs expanding.
+    #
+    # kube-prometheus-stack already ships KubePersistentVolumeFillingUp, but it
+    # only fires below 15% free with a 4-day projection, or below 3% free. That
+    # is a "fix it now" alert. These fire at 80% so there is time to edit a
+    # manifest, open a PR and let Argo roll it out before anything is urgent.
+    # ---------------------------------------------------------------------
+    - name: longhorn-volume-capacity
+      rules:
+        - alert: LonghornVolumeFillingUp
+          expr: >-
+            100 * (
+              kubelet_volume_stats_used_bytes{job="kubelet"}
+              / kubelet_volume_stats_capacity_bytes{job="kubelet"}
+            ) >= 80
+            and on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_info{storageclass="longhorn"}
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }}% full"
+            description: >-
+              The filesystem inside this Longhorn volume is {{ $value | printf "%.1f" }}% full.
+              Raise spec.resources.requests.storage on the PVC in the homelab repo and let
+              Argo sync it. Longhorn 1.8 expands attached volumes online, so nothing has to
+              be scaled down first. Note that a StatefulSet's volumeClaimTemplates are
+              immutable - for those, edit the live PVC and the template together.
+
+        - alert: LonghornVolumeAlmostFull
+          expr: >-
+            100 * (
+              kubelet_volume_stats_used_bytes{job="kubelet"}
+              / kubelet_volume_stats_capacity_bytes{job="kubelet"}
+            ) >= 90
+            and on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_info{storageclass="longhorn"}
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }}% full"
+            description: >-
+              Less than 10% free. Expand it now. A full volume takes the workload down, and
+              for the Postgres clusters here it can wedge the database rather than just
+              erroring - CNPG needs headroom for WAL.
+
+        # Catches slow steady growth long before 80%, and fast growth that would
+        # blow through 80% between evaluations. The window is 6h because
+        # Prometheus retention on this cluster is only 12h.
+        - alert: LonghornVolumeWillFillUp
+          expr: >-
+            (
+              100 * (
+                kubelet_volume_stats_used_bytes{job="kubelet"}
+                / kubelet_volume_stats_capacity_bytes{job="kubelet"}
+              ) >= 60
+            )
+            and on (namespace, persistentvolumeclaim)
+            (
+              predict_linear(
+                kubelet_volume_stats_available_bytes{job="kubelet"}[6h], 3 * 24 * 3600
+              ) < 0
+            )
+            and on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_info{storageclass="longhorn"}
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is on track to fill within 3 days"
+            description: >-
+              Currently {{ $value | printf "%.0f" }}% full and growing fast enough to run out
+              inside 3 days at the current rate. Size it for the trend, not for today - a
+              volume that fills twice in a month wants a bigger jump than the next round number.
+
+        # Inodes fill independently of bytes. A volume full of tiny files (config
+        # dirs, Postgres, Home Assistant's recorder) can hit this at 20% bytes
+        # used, and the failure looks identical to a full disk.
+        - alert: LonghornVolumeInodesFillingUp
+          expr: >-
+            100 * (
+              kubelet_volume_stats_inodes_used{job="kubelet"}
+              / kubelet_volume_stats_inodes{job="kubelet"}
+            ) >= 80
+            and on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_info{storageclass="longhorn"}
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has used {{ $value | printf \"%.0f\" }}% of its inodes"
+            description: >-
+              Writes will start failing with ENOSPC while df still shows free space.
+              Expanding the PVC adds inodes too, since Longhorn grows the ext4 filesystem.
+
+    # ---------------------------------------------------------------------
+    # Physical footprint on the nodes.
+    #
+    # This is what Longhorn's "actual size" actually costs. Every replica of
+    # every volume lands on a node disk, and on the Pi nodes that disk is the SD
+    # card the OS is running from. Longhorn stops scheduling replicas when a
+    # disk crosses its storage-maximum, and a genuinely full node disk is how
+    # this cluster has previously ended up with corrupted ext4.
+    #
+    # Note these metrics cover the whole filesystem backing Longhorn's disk
+    # path, which on every node here is the OS root - so OS, container images
+    # and logs count towards them, not just replica data.
+    # ---------------------------------------------------------------------
+    - name: longhorn-node-storage
+      rules:
+        - alert: LonghornNodeDiskFillingUp
+          expr: 100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes >= 75
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn disk on {{ $labels.node }} is {{ $value | printf \"%.0f\" }}% full"
+            description: >-
+              The filesystem holding this node's Longhorn replicas is filling up. It is the
+              budget that constrains how far PVCs can be expanded - check the
+              space-amplification panel before adding capacity, because reclaiming snapshots
+              is often the real fix. On the Pi nodes this is a 30.8 GB SD card shared with
+              the OS, so container images and logs count too.
+
+        - alert: LonghornNodeDiskAlmostFull
+          expr: 100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes >= 85
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn disk on {{ $labels.node }} is {{ $value | printf \"%.0f\" }}% full"
+            description: >-
+              Longhorn will refuse to schedule new replicas here, and on a Pi node this is the
+              same partition as the OS root - filling it takes the whole node down, not just
+              storage. Delete snapshots or move a replica before this reaches 100%.
+
+    # ---------------------------------------------------------------------
+    # Space amplification: actual size vs. what the filesystem actually holds.
+    #
+    # Longhorn is copy-on-write. Blocks that get overwritten or deleted stay
+    # allocated in older snapshots, and the sparse replica file never shrinks on
+    # its own. So actual size legitimately exceeds the volume's nominal size
+    # while the filesystem inside is nearly empty. That is wasted node disk, not
+    # a volume that needs expanding.
+    # ---------------------------------------------------------------------
+    - name: longhorn-space-amplification
+      rules:
+        - alert: LonghornVolumeSpaceAmplified
+          expr: >-
+            (
+              max by (pvc, pvc_namespace) (longhorn_volume_actual_size_bytes) > 1073741824
+            )
+            / on (pvc, pvc_namespace)
+            max by (pvc, pvc_namespace) (
+              label_replace(
+                label_replace(
+                  kubelet_volume_stats_used_bytes{job="kubelet"},
+                  "pvc", "$1", "persistentvolumeclaim", "(.+)"
+                ),
+                "pvc_namespace", "$1", "namespace", "(.+)"
+              )
+            ) > 2
+          for: 6h
+          labels:
+            severity: info
+          annotations:
+            summary: "{{ $labels.pvc_namespace }}/{{ $labels.pvc }} occupies {{ $value | printf \"%.1f\" }}x the data it holds"
+            description: >-
+              Longhorn is holding {{ $value | printf "%.1f" }} times more disk per replica than
+              the filesystem inside is using. This is snapshot retention and unreclaimed
+              blocks, not a volume running out of room - do NOT expand it. Trim it from the
+              Longhorn UI (Volume > Trim Filesystem) and delete old snapshots. Multiply the
+              waste by the replica count to see what it really costs the nodes.
+
+    # ---------------------------------------------------------------------
+    # Replica health. Robustness: 0=unknown, 1=healthy, 2=degraded, 3=faulted.
+    # Unknown is excluded deliberately - a detached volume reports it, and there
+    # is a deliberately scaled-to-zero Minecraft server sitting in that state.
+    # ---------------------------------------------------------------------
+    - name: longhorn-volume-health
+      rules:
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness == 2
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is degraded"
+            description: >-
+              Running on fewer healthy replicas than requested. Longhorn usually rebuilds on
+              its own; if it has not after 30 minutes, a node disk is full or a replica cannot
+              be scheduled. There are no backups configured on this cluster, so a degraded
+              volume is one failure away from data loss.
+
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness == 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is faulted"
+            description: >-
+              No usable replica. The volume is unavailable and its data is at risk right now.

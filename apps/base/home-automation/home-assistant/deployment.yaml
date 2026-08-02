@@ -46,7 +46,7 @@ spec:
       # the PVC (or delete it and restart to re-seed).
       initContainers:
         - name: seed-config
-          image: busybox:1.37
+          image: busybox:1.38
           command:
             - sh
             - -c

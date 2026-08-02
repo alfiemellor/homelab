@@ -19,7 +19,7 @@ spec:
         - operator: Exists
       containers:
         - name: exporter
-          image: busybox:1.37
+          image: busybox:1.38
           command: ["sh", "/opt/sdcard-exporter/collect.sh"]
           env:
             - name: INTERVAL

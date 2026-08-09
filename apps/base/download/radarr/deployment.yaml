@@ -34,7 +34,7 @@ spec:
 
       containers:
         - name: radarr
-          image: ghcr.io/home-operations/radarr:6.4.0@sha256:c82ca292d70ac798bc993421fa7467b0c760238db646a1abc7789115d4359d5c
+          image: ghcr.io/home-operations/radarr:6.4.1@sha256:260469d707617f4b5be1cd11a40be7e4889c63c5e7cdbc6a429626dc05863b6b
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

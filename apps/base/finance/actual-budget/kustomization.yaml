@@ -4,7 +4,7 @@ kind: Kustomization
 helmCharts:
   - name: actualbudget
     repo: https://community-charts.github.io/helm-charts
-    version: 1.9.2
+    version: 1.9.3
     releaseName: actual-budget
     namespace: finance
     valuesFile: values.yaml

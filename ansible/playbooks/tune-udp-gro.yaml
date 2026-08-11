@@ -1,0 +1,83 @@
+- name: Enable UDP GRO forwarding for Tailscale exit node / subnet router throughput
+  hosts: all
+  become: true
+  vars:
+    tune_script: /usr/local/sbin/tailscale-netdev-tune
+  tasks:
+    # Tailscale's documented Linux tuning for subnet routers and exit nodes.
+    # Without rx-udp-gro-forwarding the kernel hands tailscaled one WireGuard
+    # datagram per syscall; with it, forwarded UDP is coalesced and the syscall
+    # cost is amortised across the batch.
+    #
+    # tailscaled normally applies this itself, but the operator-managed proxy
+    # runs in a pod on the CNI network, so it only ever sees its own veth --
+    # never the physical NIC. It has to be set on the host.
+    - name: Install NIC tuning script
+      copy:
+        dest: "{{ tune_script }}"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Managed by ansible (playbooks/tune-udp-gro.yaml)
+          set -eu
+          NETDEV=$(ip -o route get 8.8.8.8 \
+            | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") print $(i + 1)}' \
+            | head -1)
+          [ -n "${NETDEV}" ] || exit 0
+          exec ethtool -K "${NETDEV}" rx-udp-gro-forwarding on rx-gro-list off
+
+    - name: Install NIC tuning service
+      copy:
+        dest: /etc/systemd/system/tailscale-netdev-tune.service
+        mode: "0644"
+        content: |
+          # Managed by ansible (playbooks/tune-udp-gro.yaml)
+          [Unit]
+          Description=Enable UDP GRO forwarding for Tailscale throughput
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart={{ tune_script }}
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart tailscale-netdev-tune
+
+    - name: Ensure ethtool is installed
+      package:
+        name: ethtool
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Enable and start NIC tuning service
+      systemd:
+        name: tailscale-netdev-tune.service
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Verify offload settings applied
+      shell: >-
+        set -o pipefail;
+        ethtool -k "$(ip -o route get 8.8.8.8
+        | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") print $(i + 1)}'
+        | head -1)"
+        | grep -E 'rx-udp-gro-forwarding|rx-gro-list'
+      args:
+        executable: /bin/bash
+      changed_when: false
+      register: offload_state
+
+    - name: Show offload settings
+      debug:
+        var: offload_state.stdout_lines
+
+  handlers:
+    - name: Restart tailscale-netdev-tune
+      systemd:
+        name: tailscale-netdev-tune.service
+        state: restarted
+        daemon_reload: true

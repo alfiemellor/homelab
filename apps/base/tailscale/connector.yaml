@@ -5,6 +5,7 @@ metadata:
   namespace: tailscale
 spec:
   hostname: ts-exit-node
+  proxyClass: exit-node-perf
   exitNode: true
   subnetRouter:
     advertiseRoutes:

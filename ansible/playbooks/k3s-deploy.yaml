@@ -1,55 +1,152 @@
-- name: Install k3s cluster
+---
+- name: Install k3s server
   hosts: master
   become: true
   tasks:
-    - name: Download and install k3s on master
+    - name: Check whether the k3s server is already installed
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_server_unit
+
+    - name: Install k3s server
       shell: |
-        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik --disable servicelb --disable local-storage" sh -
-      args:
-        creates: /etc/rancher/k3s/k3s.yaml
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          INSTALL_K3S_EXEC="{{ k3s_server_exec }}" sh -
+      when: not k3s_server_unit.stat.exists
 
-    - name: Get k3s token
-      shell: cat /var/lib/rancher/k3s/server/node-token
-      register: k3s_token
+    - name: Wait for the API server to become ready
+      command: k3s kubectl get --raw /readyz
+      register: k3s_readyz
       changed_when: false
+      until: k3s_readyz.rc == 0
+      retries: 30
+      delay: 5
 
-    - name: Get master node IP
-      command: hostname -I
-      register: master_ip
-      changed_when: false
+    - name: Read the node join token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_node_token
+      no_log: true
 
-    - name: Label master node
-      command: kubectl label node k3s-01 role=master arch=x86 --overwrite
-      changed_when: false
-    
-    - name: Label node with Intel GPU feature flag
-      command: kubectl label node k3s-01 intel.feature.node.kubernetes.io/gpu=true --overwrite
-      changed_when: true
+    - name: Publish join details for the worker plays
+      set_fact:
+        k3s_join_url: "https://{{ ansible_host }}:{{ k3s_api_port }}"
+        k3s_join_token: "{{ k3s_node_token.content | b64decode | trim }}"
+      no_log: true
 
+- name: Detect re-imaged workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Check whether the k3s agent is already installed
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_unit
+
+- name: Clear stale cluster state for re-imaged workers
+  hosts: master
+  become: true
   vars:
-    ansible_python_interpreter: /usr/bin/python3
+    target_workers: >-
+      {{ groups['workers'] | map('extract', hostvars)
+         | selectattr('k3s_agent_unit', 'defined')
+         | map(attribute='inventory_hostname') | list }}
+  tasks:
+    - name: Look for workers that are registered but no longer installed
+      command: k3s kubectl get node {{ item }} --ignore-not-found -o name
+      register: stale_nodes
+      changed_when: false
+      loop: "{{ target_workers }}"
+      when: not (hostvars[item].k3s_agent_unit.stat.exists | default(true))
+
+    - name: Delete the stale Node object
+      command: k3s kubectl delete node {{ item.item }}
+      loop: "{{ stale_nodes.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when:
+        - not (item.skipped | default(false))
+        - (item.stdout | default('')) | length > 0
+
+    - name: Delete the stale node-password secret
+      command: >-
+        k3s kubectl -n kube-system delete secret
+        {{ item.item }}.node-password.k3s --ignore-not-found
+      loop: "{{ stale_nodes.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when:
+        - not (item.skipped | default(false))
+        - (item.stdout | default('')) | length > 0
 
 - name: Install k3s agent on workers
   hosts: workers
   become: true
   tasks:
-    - name: Download and install k3s agent
+    - name: Ensure the rancher config directory exists
+      file:
+        path: "{{ k3s_token_path | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: not k3s_agent_unit.stat.exists
+
+    - name: Install the join token
+      copy:
+        content: "{{ hostvars['k3s-01'].k3s_join_token }}\n"
+        dest: "{{ k3s_token_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+      when: not k3s_agent_unit.stat.exists
+
+    - name: Install k3s agent
       shell: |
-        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['k3s-01']['master_ip'].stdout.split()[0] }}:6443 K3S_TOKEN={{ hostvars['k3s-01']['k3s_token'].stdout }} sh -
-      args:
-        creates: /etc/rancher/k3s/k3s.yaml
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          K3S_URL={{ hostvars['k3s-01'].k3s_join_url }} \
+          K3S_TOKEN_FILE={{ k3s_token_path }} sh -
+      when: not k3s_agent_unit.stat.exists
 
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-
-- name: Label worker nodes from master
+- name: Label nodes
   hosts: master
   become: true
-  tasks:
-    - name: Label worker nodes
-      command: kubectl label node {{ item }} role=worker node-role.kubernetes.io/worker=true arch=arm64 --overwrite
-      with_items: "{{ groups['workers'] }}"
-      changed_when: false
-
   vars:
-    ansible_python_interpreter: /usr/bin/python3
+    target_workers: >-
+      {{ groups['workers'] | map('extract', hostvars)
+         | selectattr('k3s_agent_unit', 'defined')
+         | map(attribute='inventory_hostname') | list }}
+  tasks:
+    - name: Wait for every worker to register
+      command: k3s kubectl get node {{ item }} -o name
+      register: node_registered
+      changed_when: false
+      until: node_registered.rc == 0
+      retries: 30
+      delay: 5
+      loop: "{{ target_workers }}"
+
+    - name: Wait for every worker to report Ready
+      command: >-
+        k3s kubectl wait --for=condition=Ready
+        node/{{ item }} --timeout=300s
+      changed_when: false
+      loop: "{{ target_workers }}"
+
+    - name: Label the master node
+      command: >-
+        k3s kubectl label node {{ inventory_hostname }}
+        {{ k3s_master_labels }} --overwrite
+      register: master_label
+      changed_when: "'not labeled' not in master_label.stdout"
+
+    - name: Label the worker nodes
+      command: >-
+        k3s kubectl label node {{ item }}
+        {{ k3s_worker_labels }} --overwrite
+      register: worker_label
+      changed_when: "'not labeled' not in worker_label.stdout"
+      loop: "{{ target_workers }}"

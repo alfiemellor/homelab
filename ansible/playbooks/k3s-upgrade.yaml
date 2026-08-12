@@ -1,81 +1,141 @@
 ---
-- name: Gather facts from all hosts
-  hosts: all
-  tasks:
-    - name: Get current k3s version
-      shell: k3s --version | awk '{print $3}'
-      register: current_version
-      changed_when: false
-      ignore_errors: true
+# Upgrades the cluster to group_vars/all.yml:k3s_version.
+# Override for a one-off run with:  -e k3s_version=v1.32.7+k3s1
+#
+# The master is always upgraded first and the workers roll one at a time, so
+# the kubelet never ends up newer than the API server it talks to.
 
-- name: Upgrade k3s on master
+- name: Gather installed k3s versions
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Get installed k3s version
+      command: k3s --version
+      register: k3s_version_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Record installed version
+      set_fact:
+        k3s_installed_version: >-
+          {{ (k3s_version_raw.stdout | default(''))
+             | regex_search('v[0-9]+\.[0-9]+\.[0-9]+\+k3s[0-9]+') | default('', true) }}
+
+    - name: Show what is installed now
+      debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ k3s_installed_version | default('', true) | ternary(k3s_installed_version, 'not installed') }}
+          -> target {{ k3s_version }}
+
+    # k3s does not support downgrades: the datastore schema is migrated forward
+    # on start and an older binary will not read it back.
+    - name: Refuse to downgrade
+      assert:
+        that:
+          - (k3s_version | regex_search('[0-9]+\.[0-9]+\.[0-9]+'))
+            is version(k3s_installed_version | regex_search('[0-9]+\.[0-9]+\.[0-9]+'), '>=')
+        fail_msg: >-
+          {{ inventory_hostname }} runs {{ k3s_installed_version }}, which is newer
+          than the target {{ k3s_version }}. Downgrading k3s is not supported --
+          raise k3s_version in group_vars/all.yml instead.
+      when: k3s_installed_version | length > 0
+
+- name: Upgrade the k3s server
   hosts: master
   become: true
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-    k3s_version: "{{ k3s_target_version | default('') }}"
-    version_arg: "{{ (k3s_version != '') | ternary('INSTALL_K3S_VERSION=' + k3s_version, '') }}"
-  
   tasks:
-    - name: Show current master version
-      debug:
-        msg: "Current K3s version on master: {{ hostvars[inventory_hostname].current_version.stdout }}"
-    
-    - name: Upgrade k3s on master
+    - name: Upgrade k3s server
       shell: |
-        curl -sfL https://get.k3s.io | {{ version_arg }} INSTALL_K3S_EXEC="--disable traefik --disable servicelb --disable local-storage" sh -
-      register: upgrade_result
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          INSTALL_K3S_EXEC="{{ k3s_server_exec }}" sh -
+      when: k3s_installed_version != k3s_version
 
-    - name: Wait for k3s to restart
-      pause:
-        seconds: 30
-    
-    - name: Get new master version
-      shell: k3s --version | awk '{print $3}'
-      register: new_version
+    - name: Wait for the API server to become ready
+      command: k3s kubectl get --raw /readyz
+      register: k3s_readyz
       changed_when: false
-      
-    - name: Show upgrade result
-      debug:
-        msg: "Upgraded from {{ hostvars[inventory_hostname].current_version.stdout }} to {{ new_version.stdout }}"
-    
-    - name: Get master node IP
-      command: hostname -I
-      register: master_ip
-      changed_when: false
+      until: k3s_readyz.rc == 0
+      retries: 60
+      delay: 5
 
-    - name: Get k3s token
-      shell: cat /var/lib/rancher/k3s/server/node-token
-      register: k3s_token
-      changed_when: false
+    - name: Read the node join token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_node_token
+      no_log: true
 
-- name: Upgrade k3s on workers
+    - name: Publish join details for the worker play
+      set_fact:
+        k3s_join_url: "https://{{ ansible_host }}:{{ k3s_api_port }}"
+        k3s_join_token: "{{ k3s_node_token.content | b64decode | trim }}"
+      no_log: true
+
+- name: Upgrade the k3s agents
   hosts: workers
   become: true
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-    k3s_version: "{{ k3s_target_version | default('') }}"  
-    version_arg: "{{ (k3s_version != '') | ternary('INSTALL_K3S_VERSION=' + k3s_version, '') }}"
-  
+  serial: 1
   tasks:
-    - name: Show current worker version
-      debug:
-        msg: "Current K3s version on {{ inventory_hostname }}: {{ hostvars[inventory_hostname].current_version.stdout }}"
-      
-    - name: Upgrade k3s agent on worker
-      shell: |
-        curl -sfL https://get.k3s.io | {{ version_arg }} K3S_URL=https://{{ hostvars['k3s-01']['master_ip'].stdout.split()[0] }}:6443 K3S_TOKEN={{ hostvars['k3s-01']['k3s_token'].stdout }} sh -
-      register: upgrade_result
-      
-    - name: Wait for agent to restart
-      pause:
-        seconds: 15
-        
-    - name: Get new worker version
-      shell: k3s --version | awk '{print $3}'
-      register: new_version
+    - name: Roll {{ inventory_hostname }}
+      when: k3s_installed_version != k3s_version
+      block:
+        - name: Cordon the node
+          command: k3s kubectl cordon {{ inventory_hostname }}
+          delegate_to: "{{ groups['master'][0] }}"
+
+        - name: Drain the node
+          command: >-
+            k3s kubectl drain {{ inventory_hostname }}
+            --ignore-daemonsets --delete-emptydir-data
+            --timeout={{ k3s_drain_timeout }}s
+          delegate_to: "{{ groups['master'][0] }}"
+          when: k3s_drain_on_upgrade
+
+        - name: Install the join token
+          copy:
+            content: "{{ hostvars['k3s-01'].k3s_join_token }}\n"
+            dest: "{{ k3s_token_path }}"
+            owner: root
+            group: root
+            mode: "0600"
+          no_log: true
+
+        - name: Upgrade k3s agent
+          shell: |
+            curl -sfL https://get.k3s.io | \
+              INSTALL_K3S_VERSION={{ k3s_version }} \
+              K3S_URL={{ hostvars['k3s-01'].k3s_join_url }} \
+              K3S_TOKEN_FILE={{ k3s_token_path }} sh -
+
+        - name: Wait for the node to report Ready
+          command: >-
+            k3s kubectl wait --for=condition=Ready
+            node/{{ inventory_hostname }} --timeout=300s
+          changed_when: false
+          delegate_to: "{{ groups['master'][0] }}"
+
+      always:
+        # Runs even if the upgrade failed, so a broken run never leaves a node
+        # cordoned and quietly out of the cluster.
+        - name: Uncordon the node
+          command: k3s kubectl uncordon {{ inventory_hostname }}
+          delegate_to: "{{ groups['master'][0] }}"
+
+- name: Report final versions
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Get installed k3s version
+      command: k3s --version
+      register: k3s_version_after
       changed_when: false
-      
-    - name: Show upgrade result
+
+    - name: Show result
       debug:
-        msg: "Upgraded {{ inventory_hostname }} from {{ hostvars[inventory_hostname].current_version.stdout }} to {{ new_version.stdout }}"
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ k3s_installed_version | default('', true) | ternary(k3s_installed_version, 'not installed') }}
+          -> {{ k3s_version_after.stdout | regex_search('v[0-9]+\.[0-9]+\.[0-9]+\+k3s[0-9]+') }}

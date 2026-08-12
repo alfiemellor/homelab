@@ -1,0 +1,15 @@
+---
+k3s_version: "v1.36.3+k3s1"
+k3s_server_exec: >-
+  --disable traefik
+  --disable servicelb
+  --disable local-storage
+  --kube-controller-manager-arg bind-address=0.0.0.0
+  --kube-proxy-arg metrics-bind-address=0.0.0.0
+  --kube-scheduler-arg bind-address=0.0.0.0
+k3s_api_port: 6443
+k3s_token_path: /etc/rancher/node-token
+k3s_master_labels: "role=master arch=x86 intel.feature.node.kubernetes.io/gpu=true"
+k3s_worker_labels: "role=worker node-role.kubernetes.io/worker=true arch=arm64"
+k3s_drain_on_upgrade: true
+k3s_drain_timeout: 300

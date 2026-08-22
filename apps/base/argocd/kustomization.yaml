@@ -12,3 +12,33 @@ helmCharts:
     releaseName: argocd
     namespace: argocd
     valuesFile: values.yaml
+# Argo CD 3.x workload selectors gained `app.kubernetes.io/instance`, but a
+# Deployment's spec.selector is immutable, so the chart's version cannot be
+# applied over the objects the ansible bootstrap created with kubectl. Force a
+# delete-and-recreate for this one transition. Remove this patch once the
+# workloads have been rebuilt with the chart's selectors.
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: argocd-.*
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ignored
+        annotations:
+          argocd.argoproj.io/sync-options: Force=true,Replace=true
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: argocd-.*
+    patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: ignored
+        annotations:
+          argocd.argoproj.io/sync-options: Force=true,Replace=true

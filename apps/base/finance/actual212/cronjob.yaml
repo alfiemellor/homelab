@@ -26,6 +26,11 @@ spec:
             app.kubernetes.io/name: actual212
         spec:
           restartPolicy: Never
+          # Upstream publishes an amd64-only image (its release workflow sets no
+          # buildx platforms), so this can only run on k3s-01 — the other four
+          # nodes are arm64 Pis and fail with "exec format error".
+          nodeSelector:
+            kubernetes.io/arch: amd64
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

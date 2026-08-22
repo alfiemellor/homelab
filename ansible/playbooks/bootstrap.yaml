@@ -18,7 +18,9 @@
       failed_when: ns_result.rc != 0 and "AlreadyExists" not in ns_result.stderr
 
     - name: Install ArgoCD
-      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      command: >-
+        kubectl apply -n argocd --server-side --force-conflicts
+        -f https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml
       register: argocd_install
       changed_when: argocd_install.rc == 0
 
@@ -82,3 +84,5 @@
 
   vars:
     ansible_python_interpreter: /usr/bin/python3
+    # Keep in sync with the argo-cd chart appVersion in apps/base/argocd/kustomization.yaml
+    argocd_version: v3.5.1

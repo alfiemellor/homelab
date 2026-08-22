@@ -52,8 +52,10 @@ spec:
                 # Actual, so it doesn't traverse the ingress or Cloudflare.
                 - name: ACTUAL_SERVER_URL
                   value: http://actual-budget.finance.svc.cluster.local:5006
+                # Matched exactly against open accounts in the budget, so this
+                # must track any rename in Actual.
                 - name: ACTUAL_ACCOUNT_NAME
-                  value: "Trading 212"
+                  value: "Trading 212 S&S ISA"
                 - name: ACTUAL_DATA_DIR
                   value: /data
                 - name: TZ

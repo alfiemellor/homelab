@@ -1,0 +1,9 @@
+configs:
+  cm:
+    kustomize.buildOptions: --enable-alpha-plugins --enable-helm
+    # Argo CD 3.0 dropped the built-in ignore for this field. The longhorn chart
+    # renders `preserveUnknownFields: false` on its CRDs and the API server strips
+    # it, so without this the CRDs sit permanently OutOfSync.
+    resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
+      jsonPointers:
+      - /spec/preserveUnknownFields

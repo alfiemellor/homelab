@@ -1,0 +1,101 @@
+# actual212 reads the Trading 212 equity summary and writes a balancing
+# transaction into the "Trading 212" account in Actual so the balance matches.
+#
+# The upstream image can run its own cron loop (CRON_SCHEDULE), but we leave that
+# unset so the process runs once and exits — Kubernetes owns the schedule, the
+# same way amex-tracker-sync does, and nothing sits idle holding credentials.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: actual212
+  labels:
+    app.kubernetes.io/name: actual212
+spec:
+  schedule: "0 6 * * *"
+  timeZone: Europe/London
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: actual212
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: actual212
+              image: ghcr.io/joshhoughton/actual212:1.0.1
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                # In-cluster address — the sync never leaves the cluster to reach
+                # Actual, so it doesn't traverse the ingress or Cloudflare.
+                - name: ACTUAL_SERVER_URL
+                  value: http://actual-budget.finance.svc.cluster.local:5006
+                - name: ACTUAL_ACCOUNT_NAME
+                  value: "Trading 212"
+                - name: ACTUAL_DATA_DIR
+                  value: /data
+                - name: TZ
+                  value: Europe/London
+                - name: T212_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: actual212-secrets
+                      key: T212_API_KEY
+                - name: T212_API_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: actual212-secrets
+                      key: T212_API_SECRET
+                - name: ACTUAL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: actual212-secrets
+                      key: ACTUAL_PASSWORD
+                - name: ACTUAL_SYNC_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: actual212-secrets
+                      key: ACTUAL_SYNC_ID
+                # Only needed if the budget file is end-to-end encrypted; the
+                # container starts fine when the 1Password item has no such field.
+                - name: ACTUAL_ENCRYPTION_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: actual212-secrets
+                      key: ACTUAL_ENCRYPTION_PASSWORD
+                      optional: true
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          volumes:
+            # The budget is re-downloaded each run, so this is a cache, not state.
+            - name: data
+              emptyDir: {}
+            - name: tmp
+              emptyDir: {}

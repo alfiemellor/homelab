@@ -1,0 +1,49 @@
+# actual212 is a small third-party image that holds both the Trading 212 API
+# credentials and the Actual password, so its egress is limited to the three
+# things it actually needs: DNS, the Actual service, and HTTPS to the internet
+# for api.trading212.com. Private ranges are excluded from the internet rule so
+# a compromised image cannot reach the rest of the LAN or other cluster services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: actual212
+  labels:
+    app.kubernetes.io/name: actual212
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: actual212
+  policyTypes:
+    - Ingress
+    - Egress
+  # Nothing connects to it; it only makes outbound calls.
+  ingress: []
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: actualbudget
+              app.kubernetes.io/instance: actual-budget
+      ports:
+        - protocol: TCP
+          port: 5006
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

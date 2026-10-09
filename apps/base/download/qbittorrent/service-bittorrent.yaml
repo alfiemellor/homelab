@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbittorrent-bittorrent
+  namespace: download
+  labels:
+    app: qbittorrent
+  annotations:
+    # Pinned so the router's port forward always has a stable target.
+    metallb.io/loadBalancerIPs: 192.168.1.210
+spec:
+  type: LoadBalancer
+  # Separate from the WebUI Service on purpose: only the peer port belongs on a
+  # LAN LoadBalancer IP; the UI stays behind the internal ingress.
+  selector:
+    app: qbittorrent
+  # Peers show up with their real IPs instead of a node IP, and MetalLB (L2)
+  # announces from whichever node is running the pod, so there's no extra hop.
+  externalTrafficPolicy: Local
+  ports:
+  # Must match QBT_BT_PORT: qBittorrent tells trackers and DHT its listen port,
+  # so the router -> LB -> pod path has to keep the same number end to end.
+  - name: bittorrent-tcp
+    port: 50413
+    targetPort: 50413
+    protocol: TCP
+  - name: bittorrent-udp
+    port: 50413
+    targetPort: 50413
+    protocol: UDP

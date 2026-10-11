@@ -150,7 +150,16 @@ prometheus:
     probeSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector: {}
     serviceMonitorSelector: {}
-    retention: 12h
+    retention: 7d
+    retentionSize: 10GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn-local
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 12Gi
     enableAdminAPI: true
     walCompression: true
     scrapeInterval: 30s

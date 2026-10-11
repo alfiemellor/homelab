@@ -25,7 +25,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: qui
-          image: ghcr.io/autobrr/qui:v1.26.0@sha256:9969375e7375194b89eebc490bd16586b6ff4ff403042f6c4f0585eb0e775eaf
+          image: ghcr.io/autobrr/qui:v1.31.1@sha256:6ee1cf6df0a82687089e6e181aad09edb826b4b779603c56a28c803d19db99fd
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

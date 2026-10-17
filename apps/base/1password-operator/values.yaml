@@ -1,5 +1,9 @@
 connect:
   create: true
+  api:
+    resources:
+      requests:
+        cpu: 50m
 operator:
   create: true
   token:

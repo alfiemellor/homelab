@@ -3,6 +3,10 @@ controller:
     ssl-redirect: "true"
     force-ssl-redirect: "true"
   replicaCount: 3
+  resources:
+    requests:
+      cpu: 50m
+      memory: 90Mi
   service:
     type: LoadBalancer
     loadBalancerClass: tailscale

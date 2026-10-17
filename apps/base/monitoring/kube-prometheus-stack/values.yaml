@@ -38,7 +38,7 @@ grafana:
     kubernetes.io/hostname: k3s-01
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 256Mi
     limits:
       memory: 512Mi
@@ -126,7 +126,9 @@ prometheusOperator:
   prometheusConfigReloader:
     resources:
       requests:
-        cpu: 200m
+        # Chart default is 200m, but this sidecar peaks under 1m. It was the
+        # single largest source of wasted CPU reservation on k3s-01.
+        cpu: 25m
         memory: 50Mi
       limits:
         memory: 100Mi

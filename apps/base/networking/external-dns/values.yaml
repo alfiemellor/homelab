@@ -10,3 +10,8 @@ txtOwnerId: "external-dns"
 domainFilters:
   - "mellor.dev"
 policy: sync
+# v0.22+ only reads external-dns.kubernetes.io/ annotations by default. Without this,
+# the target/hostname annotations (still external-dns.alpha.kubernetes.io/) are ignored
+# and external ingress records get published as A records to the LAN LB IP.
+extraArgs:
+  - --enable-legacy-annotation-prefix

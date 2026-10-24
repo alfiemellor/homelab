@@ -6,7 +6,7 @@ resources:
 helmCharts:
   - name: connect
     repo: https://1password.github.io/connect-helm-charts
-    version: 2.4.2
+    version: 2.4.3
     releaseName: 1password-operator
     namespace: 1password-operator
     valuesFile: values.yaml

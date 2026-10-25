@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: windshift
+  namespace: project-management
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.kubernetes.io/hostname: windshift.mellor.dev
+    kubernetes.io/tls-acme: "true"
+    # nginx defaults to 1m, below Windshift's default 50MB attachment limit
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    # Live updates are long-lived SSE streams, which nginx would otherwise cut
+    # off after 60s of silence
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: windshift.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: windshift
+            port:
+              number: 8080
+  tls:
+  - secretName: windshift.mellor.dev
+    hosts:
+    - windshift.mellor.dev

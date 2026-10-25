@@ -1,0 +1,23 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: windshift-pg
+  namespace: project-management
+  labels:
+    app: windshift
+spec:
+  instances: 1
+  # The OCI cluster has no block volume CSI driver, so like Plane this lands on
+  # k3s's default local-path class (a directory on the node's boot volume, so
+  # the size is not enforced). If this moves to OCI block volumes, note their
+  # 50GB minimum: anything smaller is rounded up and billed as 50GB.
+  storage:
+    size: 5Gi
+  # With a single instance the PDB can never be satisfied, so it would block
+  # every node drain (e.g. k3s upgrades). local-path pins the pod to its node
+  # anyway, so it just comes back when the node does.
+  enablePDB: false
+  bootstrap:
+    initdb:
+      database: windshift
+      owner: windshift

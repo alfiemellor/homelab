@@ -34,6 +34,12 @@
       "matchPackageNames": ["busybox"],
       "groupName": "Utility Images",
       "groupSlug": "utility-images"
+    },
+    {
+      "description": "Longhorn only supports upgrading one minor version at a time, so propose each minor separately instead of jumping straight to latest",
+      "matchDatasources": ["helm"],
+      "matchPackageNames": ["longhorn"],
+      "separateMultipleMinor": true
     }
   ],
   "prConcurrentLimit": 2,

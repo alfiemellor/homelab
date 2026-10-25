@@ -34,46 +34,28 @@ resource "oci_core_default_security_list" "default_list" {
     source      = "10.0.0.0/16"
   }
 
+  # Nothing else is reachable from the internet: SSH, kubectl and apps are
+  # reached over Tailscale. This only lets peers make direct WireGuard
+  # connections instead of falling back to a DERP relay.
   ingress_security_rules {
-    protocol    = "6"
-    description = "Allow ssh traffic"
-    tcp_options {
-      min = 22
-      max = 22
+    protocol    = "17"
+    description = "Allow Tailscale direct connections"
+    udp_options {
+      min = 41641
+      max = 41641
     }
     source = "0.0.0.0/0"
   }
 
   ingress_security_rules {
-    protocol    = "6"
-    description = "Allow http traffic"
-    tcp_options {
-      min = 80
-      max = 80
+    protocol    = "1"
+    description = "Allow path MTU discovery"
+    icmp_options {
+      type = 3
+      code = 4
     }
     source = "0.0.0.0/0"
   }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow https traffic"
-    tcp_options {
-      min = 443
-      max = 443
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow k3s traffic"
-    tcp_options {
-      min = 6443
-      max = 6443
-    }
-    source = "0.0.0.0/0"
-  }
-
 }
 
 resource "oci_core_internet_gateway" "internet_gateway" {

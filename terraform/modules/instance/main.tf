@@ -10,21 +10,23 @@ resource "oci_core_instance" "instance" {
   }
 
   source_details {
-    source_type = "image"
-    source_id   = var.image_id
+    source_type             = "image"
+    source_id               = var.image_id
+    boot_volume_size_in_gbs = var.boot_volume_size_in_gbs
   }
 
   shape_config {
-    ocpus = var.ocpus
+    ocpus         = var.ocpus
     memory_in_gbs = var.memory_in_gbs
   }
-  
+
   metadata = {
     ssh_authorized_keys = var.ssh_authorized_key
     user_data = base64encode(templatefile("${path.module}/templates/user_data.sh",
       {
         token                 = var.cluster_token,
-        k3s_server_private_ip = var.k3s_server_private_ip
+        k3s_server_private_ip = var.k3s_server_private_ip,
+        tailscale_auth_key    = var.tailscale_auth_key
       }
     ))
   }

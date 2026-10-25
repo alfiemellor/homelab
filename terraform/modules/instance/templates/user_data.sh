@@ -10,41 +10,55 @@ iptables -X
 
 netfilter-persistent save
 
+# Join the tailnet before anything else. The security list only allows
+# Tailscale in from the internet, so this is the only way to reach the node.
+curl -fsSL https://tailscale.com/install.sh | sh
+until tailscale up --auth-key="${tailscale_auth_key}" --hostname="$HOSTNAME" --advertise-tags=tag:oci; do
+    echo 'tailscale did not come up, retrying in 5 seconds...'
+    sleep 5
+done
+TAILSCALE_IP=$(tailscale ip -4)
+TAILSCALE_FQDN=$(tailscale status --json | python3 -c 'import json, sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
+
 if [[ "$HOSTNAME" =~ "oci-k3s-server" ]]; then
-    SERVER_PUBLIC_IP=$(curl -s ifconfig.io)
     SERVER_PRIVATE_IP=$(hostname -I | awk '{print $1}')
-    echo "Starting k3s server, node IP: $SERVER_PRIVATE_IP, and external IP: $SERVER_PUBLIC_IP"
-    curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" sh -s - server --node-ip=$SERVER_PRIVATE_IP --node-external-ip=$SERVER_PUBLIC_IP --tls-san=$SERVER_PRIVATE_IP --tls-san=$SERVER_PUBLIC_IP --cluster-init --disable traefik --disable servicelb --disable local-storage
-    
+    echo "Starting k3s server, node IP: $SERVER_PRIVATE_IP, tailnet IP: $TAILSCALE_IP"
+    curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" sh -s - server --node-ip=$SERVER_PRIVATE_IP --tls-san=$SERVER_PRIVATE_IP --tls-san=$TAILSCALE_IP --tls-san=$HOSTNAME --tls-san=$TAILSCALE_FQDN --cluster-init --disable traefik --disable servicelb
+
     # Wait for Kubernetes API to be available
     while ! kubectl get nodes; do sleep 5; done
 
-    # Define the total number of nodes in the cluster (master + worker nodes)
-    EXPECTED_NODES=4  # TODO: Pull this number as a var from Terraform based on the number of installed nodes
-    READY_NODES=0
-
-    while [ $READY_NODES -lt $EXPECTED_NODES ]; do
-        READY_NODES=$(kubectl get nodes --no-headers | grep -c 'Ready')
-        echo "Waiting for nodes to be ready... ($READY_NODES/$EXPECTED_NODES)"
-        sleep 5
-    done
-
-    if [ "{bootstrap_argocd}" = "true" ]; then
-        # Install ArgoCD
-        kubectl create namespace argocd
-        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-        # Patch ArgoCD config map to allow Kustomize to build Helm charts
-        kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"kustomize.buildOptions":"--enable-alpha-plugins --enable-helm"}}'
-
-        while [[ $(kubectl get pods -n argocd --field-selector=status.phase!=Running | wc -l) -gt 1 ]]; do
-            echo "Waiting for ArgoCD to be fully ready..."
-            sleep 10
-        done
-
-        # Bootstrap ArgoCD applications
-        kubectl apply -f https://raw.githubusercontent.com/alfiemellor/homelab/main/apps/argocd/bootstrap.yaml
-    fi   
+    # Identity for the home cluster's ArgoCD to manage this cluster with, the
+    # same objects `argocd cluster add` would create
+    kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-manager
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: argocd-manager
+    namespace: kube-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-manager-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: argocd-manager
+type: kubernetes.io/service-account-token
+EOF
 else
     echo "Starting k3s agent, server IP: ${k3s_server_private_ip}"
     until (curl -sfL https://get.k3s.io | K3S_TOKEN="${token}" K3S_URL="https://${k3s_server_private_ip}:6443" sh -s); do

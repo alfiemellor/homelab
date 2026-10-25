@@ -1,0 +1,15 @@
+# Attachments, plugins and AI prompt overrides. Default (local-path) class,
+# same as Plane; see postgres.yaml for the block volume note.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: windshift-data
+  namespace: project-management
+  labels:
+    app: windshift
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

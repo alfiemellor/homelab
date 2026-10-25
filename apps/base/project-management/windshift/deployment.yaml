@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: windshift
+  namespace: project-management
+  labels:
+    app: windshift
+spec:
+  replicas: 1
+  # /data is a ReadWriteOnce volume, so the old pod has to let go of it first
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: windshift
+  template:
+    metadata:
+      labels:
+        app: windshift
+    spec:
+      # Otherwise every Service in the namespace (Plane's included) is injected
+      # as *_SERVICE_HOST/*_PORT env vars
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: windshift
+          image: ghcr.io/windshiftapp/windshift:v0.9.1@sha256:4dcebe37a9ef3c3ae44351a9975842db384964ce5b883369842ecf010c9d1beb
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/London"
+            # Upstream's compose file turns DOMAIN into BASE_URL; the binary
+            # itself only reads BASE_URL, and derives the CORS/CSRF hosts and
+            # WebAuthn RP ID from it.
+            - name: BASE_URL
+              value: "https://windshift.mellor.dev"
+            # TLS is terminated by ingress-nginx, so trust its X-Forwarded-*
+            - name: USE_PROXY
+              value: "true"
+            - name: SSO_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: windshift-secrets
+                  key: SSO_SECRET
+            - name: LOG_FORMAT
+              value: "json"
+            # Go heap and cache budget, kept in step with the memory limit below
+            - name: WINDSHIFT_MEMORY_LIMIT_MB
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+                  divisor: 1Mi
+            - name: TMPDIR
+              value: "/tmp"
+            - name: ATTACHMENT_PATH
+              value: "/data/attachments"
+            - name: PLUGIN_DIR
+              value: "/data/plugins"
+            - name: AI_PROMPTS_DIR
+              value: "/data/prompts"
+            # CloudNativePG cluster (windshift-pg). Host, port and database are
+            # deterministic; only the credentials come from the operator-made
+            # -app secret, so no password is ever in git.
+            - name: DB_TYPE
+              value: "postgres"
+            - name: POSTGRES_HOST
+              value: "windshift-pg-rw"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: "windshift"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: windshift-pg-app
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: windshift-pg-app
+                  key: password
+            # CNPG serves TLS with its own CA; verify against it. lib/pq picks
+            # the CA file up from PGSSLROOTCERT, and windshift-pg-rw is one of
+            # the server certificate's SANs.
+            - name: POSTGRES_SSLMODE
+              value: "verify-full"
+            - name: PGSSLROOTCERT
+              value: "/etc/windshift/pg-ca/ca.crt"
+            # Pool size per replica. One replica x 30 + 10 headroom stays well
+            # under CNPG's default max_connections of 100.
+            - name: MAX_READ_CONNS
+              value: "30"
+            - name: POSTGRES_REPLICA_COUNT
+              value: "1"
+            - name: POSTGRES_CONNECTION_HEADROOM
+              value: "10"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+            - name: pg-ca
+              mountPath: /etc/windshift/pg-ca
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          # The HTTP server only starts listening once the schema migrations
+          # have run, which takes a while on first boot
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Also pings the database
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: windshift-data
+        # The image is FROM scratch, so there is no /tmp to write to otherwise
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        # Only the CA certificate; the secret also holds the CA's private key
+        - name: pg-ca
+          secret:
+            secretName: windshift-pg-ca
+            items:
+              - key: ca.crt
+                path: ca.crt

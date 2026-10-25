@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "timezone": "UTC",
   "schedule": [
@@ -14,18 +14,23 @@
       "apps/overlays/**/*.yaml"
     ]
   },
-  "docker": {
-    "enabled": true,
-    "automerge": false
-  },
   "ignorePaths": [
     "ansible/**",
     "terraform/**"
   ],
   "packageRules": [
     {
+      "matchCategories": [
+        "docker"
+      ],
+      "enabled": true,
+      "automerge": false
+    },
+    {
       "description": "Group all image updates together",
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "App Container Images",
       "groupSlug": "app-images"
     },

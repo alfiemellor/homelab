@@ -1,0 +1,8 @@
+# Separate tags from the home operator (tag:k8s-operator / tag:k8s) so the
+# tailnet policy can keep OCI proxies away from the home network.
+operatorConfig:
+  hostname: tailscale-operator-oci
+  defaultTags:
+    - "tag:oci-k8s-operator"
+proxyConfig:
+  defaultTags: "tag:oci-k8s"

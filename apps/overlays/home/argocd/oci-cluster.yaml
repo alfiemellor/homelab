@@ -1,0 +1,31 @@
+# Reaches the OCI cluster's API over the tailnet. The Tailscale operator points
+# this Service at an egress proxy, so ArgoCD connects to
+# oci-k3s-api.argocd.svc.cluster.local:6443 without the API being public.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oci-k3s-api
+  namespace: argocd
+  annotations:
+    tailscale.com/tailnet-fqdn: oci-k3s-server.tailnet-fbf1.ts.net
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+    - name: https
+      port: 6443
+      protocol: TCP
+---
+# ArgoCD cluster secret. The 1Password item needs the fields:
+#   name:   oci
+#   server: https://oci-k3s-api.argocd.svc.cluster.local:6443
+#   config: {"bearerToken":"<token>","tlsClientConfig":{"caData":"<base64 CA>","serverName":"oci-k3s-server"}}
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: oci-cluster
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+spec:
+  itemPath: "vaults/Kubernetes/items/oci-cluster"

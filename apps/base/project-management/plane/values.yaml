@@ -1,0 +1,28 @@
+ingress:
+  enabled: true
+  appHost: plane.mellor.dev
+  ingressClass: internal
+  ingress_annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.kubernetes.io/hostname: plane.mellor.dev
+    kubernetes.io/tls-acme: "true"
+    # nginx defaults to 1m, below Plane's 5MB upload limit
+    nginx.ingress.kubernetes.io/proxy-body-size: 5m
+ssl:
+  # Issued by cert-manager from the annotation above
+  tls_secret_name: plane.mellor.dev
+
+env:
+  # Fail the render rather than fall back to the chart's public example keys
+  requireExplicitSecrets: true
+
+external_secrets:
+  app_keys_existingSecret: plane-app-keys
+  # Also holds the MinIO root credentials, which would otherwise be the
+  # chart's admin/password and reachable through the /uploads route
+  doc_store_existingSecret: plane-doc-store
+
+postgres:
+  volumeSize: 5Gi
+minio:
+  volumeSize: 10Gi

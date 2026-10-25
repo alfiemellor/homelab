@@ -7,3 +7,4 @@ resources:
   - ../../../base/monitoring/longhorn
   - ../../../base/monitoring/loki
   - ../../../base/monitoring/alloy
+  - ../../../base/monitoring/oci-prometheus-datasource

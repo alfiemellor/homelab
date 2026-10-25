@@ -1,0 +1,8 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus (OCI)
+    type: prometheus
+    uid: prometheus-oci
+    url: http://oci-prometheus.monitoring.svc.cluster.local:9090
+    access: proxy
+    isDefault: false

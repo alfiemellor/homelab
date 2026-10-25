@@ -21,6 +21,5 @@ controller:
   watchIngressWithoutClass: false
   metrics:
     enabled: true
-    # Needs the ServiceMonitor CRD, which arrives with the OCI monitoring stack
     serviceMonitor:
-      enabled: false
+      enabled: true

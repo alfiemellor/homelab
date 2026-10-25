@@ -1,0 +1,15 @@
+# The OCI cluster's Prometheus, reached over the tailnet through a Tailscale
+# egress proxy
+apiVersion: v1
+kind: Service
+metadata:
+  name: oci-prometheus
+  annotations:
+    tailscale.com/tailnet-fqdn: oci-prometheus.tailnet-fbf1.ts.net
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+    - name: http
+      port: 9090
+      protocol: TCP

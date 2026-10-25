@@ -11,3 +11,24 @@ helmCharts:
     releaseName: plane
     namespace: project-management
     valuesFile: values.yaml
+patches:
+  # The chart stamps every pod template with `timestamp: {{ now }}` so each
+  # `helm upgrade` restarts everything. Rendered by ArgoCD it changes whenever
+  # the repo does, rolling all of Plane on unrelated commits.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: remove
+        path: /spec/template/metadata/annotations/timestamp
+  # Both Jobs are named "-1" (Helm's release revision, which is always 1 under
+  # `helm template`), and a Job's pod template is immutable, so syncing any
+  # change to them fails. As Sync hooks ArgoCD recreates them on each sync
+  # instead, the way Helm reruns them on each upgrade.
+  - target:
+      kind: Job
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/hook: Sync
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation

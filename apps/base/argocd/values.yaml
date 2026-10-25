@@ -1,9 +1,17 @@
 configs:
   cm:
+    accounts.claude-mcp: apiKey
     kustomize.buildOptions: --enable-alpha-plugins --enable-helm
     resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
       jsonPointers:
       - /spec/preserveUnknownFields
+  rbac:
+    policy.csv: |
+      p, role:mcp, applications, sync, */*, allow
+      p, role:mcp, applications, action/*, */*, allow
+      p, role:mcp, logs, get, */*, allow
+      g, role:mcp, role:readonly
+      g, claude-mcp, role:mcp
 
 repoServer:
   resources:

@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: oci-apps
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/alfiemellor/homelab
+        revision: HEAD
+        directories:
+          - path: apps/overlays/oci/*
+  template:
+    metadata:
+      name: 'oci-{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/alfiemellor/homelab
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        # Registered by apps/overlays/home/argocd/oci-cluster.yaml
+        name: oci
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          # On a fresh cluster the CRDs for OnePasswordItem, ClusterIssuer and
+          # ServiceMonitor arrive from other apps (or later in the same sync)
+          - SkipDryRunOnMissingResource=true
+        # Automated sync only tries each commit once, so without this a first
+        # sync that races a CRD would stay failed until the next push
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 5m

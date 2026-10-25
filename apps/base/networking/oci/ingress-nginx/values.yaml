@@ -1,0 +1,26 @@
+# Same as the home internal ingress: only reachable on the tailnet, with
+# external-dns publishing *.mellor.dev records that point at its tailnet IP.
+controller:
+  config:
+    ssl-redirect: "true"
+    force-ssl-redirect: "true"
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 90Mi
+  service:
+    type: LoadBalancer
+    loadBalancerClass: tailscale
+    annotations:
+      tailscale.com/hostname: oci-ingress
+  ingressClassResource:
+    name: internal
+    default: true
+    controllerValue: k8s.io/internal
+  watchIngressWithoutClass: false
+  metrics:
+    enabled: true
+    # Needs the ServiceMonitor CRD, which arrives with the OCI monitoring stack
+    serviceMonitor:
+      enabled: false

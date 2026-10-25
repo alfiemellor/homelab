@@ -48,6 +48,12 @@ spec:
             # TLS is terminated by ingress-nginx, so trust its X-Forwarded-*
             - name: USE_PROXY
               value: "true"
+            # Built-in MCP server at /mcp (streamable HTTP). With BASE_URL set
+            # this also publishes the OAuth discovery metadata and dynamic
+            # client registration, so MCP clients log in via OAuth rather than
+            # needing a personal access token.
+            - name: MCP_ENABLED
+              value: "true"
             - name: SSO_SECRET
               valueFrom:
                 secretKeyRef:

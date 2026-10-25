@@ -5,6 +5,12 @@ configs:
     resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
       jsonPointers:
       - /spec/preserveUnknownFields
+    # The Tailscale operator rewrites spec.externalName on egress Services
+    # (those with a tailscale.com/tailnet-fqdn annotation) to point at its
+    # proxy, so the placeholder in git never matches the live value
+    resource.customizations.ignoreDifferences.Service: |
+      jqPathExpressions:
+      - select(.metadata.annotations["tailscale.com/tailnet-fqdn"] != null) | .spec.externalName
   rbac:
     policy.csv: |
       p, role:mcp, applications, sync, */*, allow

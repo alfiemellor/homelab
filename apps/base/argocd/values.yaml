@@ -5,6 +5,13 @@ configs:
     resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
       jsonPointers:
       - /spec/preserveUnknownFields
+    # Tailscale egress Services must be ExternalName with a placeholder
+    # externalName, which the operator rewrites to its proxy Service. Without
+    # this every such Service shows as OutOfSync and selfHeal loops re-applying
+    # the placeholder, briefly breaking the egress each time.
+    resource.customizations.ignoreDifferences.Service: |
+      jsonPointers:
+      - /spec/externalName
   rbac:
     policy.csv: |
       p, role:mcp, applications, sync, */*, allow

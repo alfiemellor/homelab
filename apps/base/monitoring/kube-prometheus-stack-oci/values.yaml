@@ -1,0 +1,94 @@
+# Metrics for the OCI cluster only. They're viewed in the home Grafana through
+# the "Prometheus (OCI)" datasource, which reaches this Prometheus over the
+# tailnet (see base/monitoring/oci-prometheus-datasource).
+crds:
+  enabled: true
+  upgradeJob:
+    enabled: true
+    forceConflicts: true
+grafana:
+  enabled: false
+# The home Alertmanager has no receivers configured, so a second one here
+# would deliver alerts nowhere too
+alertmanager:
+  enabled: false
+# k3s runs these inside its own process without separate metrics endpoints,
+# so their targets and alerts would only ever report them as down
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubelet:
+  enabled: true
+  serviceMonitor:
+    metricRelabelings:
+      - action: replace
+        sourceLabels:
+          - node
+        targetLabel: instance
+kube-state-metrics:
+  fullnameOverride: kube-state-metrics
+prometheus-node-exporter:
+  fullnameOverride: node-exporter
+  podLabels:
+    jobLabel: node-exporter
+  service:
+    portName: http-metrics
+    labels:
+      jobLabel: node-exporter
+  prometheus:
+    monitor:
+      enabled: true
+      relabelings:
+        - action: replace
+          regex: (.*)
+          replacement: $1
+          sourceLabels: ["__meta_kubernetes_pod_node_name"]
+          targetLabel: kubernetes_node
+        - action: replace
+          sourceLabels: ["__meta_kubernetes_pod_node_name"]
+          targetLabel: instance
+prometheusOperator:
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 50Mi
+      limits:
+        memory: 100Mi
+prometheus:
+  service:
+    annotations:
+      tailscale.com/expose: "true"
+      tailscale.com/hostname: oci-prometheus
+  prometheusSpec:
+    replicas: 1
+    externalLabels:
+      cluster: oci
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1536Mi
+    # Pick up every ServiceMonitor/PodMonitor/rule, not just this release's
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    retention: 7d
+    retentionSize: 8GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    walCompression: true
+    scrapeInterval: 30s
+    evaluationInterval: 30s

@@ -11,3 +11,15 @@ helmCharts:
     releaseName: longhorn
     namespace: longhorn
     valuesFile: values.yaml
+patches:
+  # Longhorn 1.10 drops the conversion webhook from these CRDs, but longhorn-manager
+  # owns spec.conversion.webhook.clientConfig.caBundle via its own field manager, so
+  # server-side apply leaves it behind and the CRD becomes invalid. Replace once to
+  # clear it; this can be removed after the 1.10 upgrade has synced.
+  - target:
+      kind: CustomResourceDefinition
+      name: (backingimages|backuptargets|engineimages|nodes|volumes).longhorn.io
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Replace=true

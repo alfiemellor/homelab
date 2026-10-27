@@ -48,20 +48,21 @@ module "oci_k3s_server" {
 }
 
 module "oci_k3s_workers" {
-  source                = "./modules/instance"
-  depends_on            = [module.oci_network, module.oci_k3s_server]
-  count                 = local.k3s_worker_count
-  availability_domain   = "XINj:UK-LONDON-1-AD-1"
-  compartment_id        = module.oci_compartment.compartment_id
-  shape                 = "VM.Standard.A1.Flex"
-  ocpus                 = 1
-  memory_in_gbs         = 6
-  display_name          = "oci-k3s-worker-${count.index + 1}"
-  subnet_id             = module.oci_network.subnet_id
-  image_id              = "ocid1.image.oc1.uk-london-1.aaaaaaaagghl3ftxsfnrszgcsqy2voqkybm5q5zi7f6h6y452qv5o2txe6eq"
-  ssh_authorized_key    = var.ssh_authorized_key
-  cluster_token         = random_string.k3s_token.result
-  tailscale_auth_key    = var.tailscale_auth_key
-  k3s_server_private_ip = module.oci_k3s_server[0].private_ip
-  freeform_tags         = { Name = "oci-k3s-worker-${count.index + 1}" }
+  source                  = "./modules/instance"
+  depends_on              = [module.oci_network, module.oci_k3s_server]
+  count                   = local.k3s_worker_count
+  availability_domain     = "XINj:UK-LONDON-1-AD-1"
+  compartment_id          = module.oci_compartment.compartment_id
+  shape                   = "VM.Standard.A1.Flex"
+  ocpus                   = 2
+  memory_in_gbs           = 12
+  display_name            = "oci-k3s-worker-${count.index + 1}"
+  subnet_id               = module.oci_network.subnet_id
+  image_id                = "ocid1.image.oc1.uk-london-1.aaaaaaaagghl3ftxsfnrszgcsqy2voqkybm5q5zi7f6h6y452qv5o2txe6eq"
+  ssh_authorized_key      = var.ssh_authorized_key
+  cluster_token           = random_string.k3s_token.result
+  tailscale_auth_key      = var.tailscale_auth_key
+  k3s_server_private_ip   = module.oci_k3s_server[0].private_ip
+  boot_volume_size_in_gbs = 100
+  freeform_tags           = { Name = "oci-k3s-worker-${count.index + 1}" }
 }

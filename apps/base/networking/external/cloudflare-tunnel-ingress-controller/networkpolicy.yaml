@@ -49,4 +49,14 @@ spec:
           port: 7844
         - protocol: TCP
           port: 443
-    # Public apps: none yet
+    # Public apps
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: travel
+          podSelector:
+            matchLabels:
+              app: trek
+      ports:
+        - protocol: TCP
+          port: 3000

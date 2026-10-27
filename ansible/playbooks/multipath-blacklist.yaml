@@ -1,0 +1,30 @@
+- name: Stop multipathd claiming Longhorn volumes
+  hosts: all
+  become: true
+  tasks:
+    # Longhorn attaches each volume over iSCSI, so it shows up as a new
+    # /dev/sdX. Ubuntu's multipathd grabs it first, and Longhorn's mkfs of a new
+    # volume then fails with "apparently in use by the system". None of the
+    # nodes use multipath storage, so keep it off every sd device.
+    # https://longhorn.io/kb/troubleshooting-volume-with-multipath/
+    - name: Gather service facts
+      service_facts:
+
+    - name: Blacklist sd devices from multipath
+      blockinfile:
+        path: /etc/multipath.conf
+        create: true
+        mode: "0644"
+        marker: "# {mark} Managed by ansible (playbooks/multipath-blacklist.yaml)"
+        block: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+          }
+      when: "'multipathd.service' in ansible_facts.services"
+      notify: Restart multipathd
+
+  handlers:
+    - name: Restart multipathd
+      systemd:
+        name: multipathd.service
+        state: restarted

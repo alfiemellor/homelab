@@ -1,0 +1,33 @@
+# SQLite database, logs, and the JWT secret and VAPID keys TREK generates on
+# first start. Longhorn is a block device, so SQLite's WAL is safe on it; keep
+# this off NFS.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trek-data
+  namespace: travel
+  labels:
+    app: trek
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Files, covers, avatars, photos and journal uploads
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trek-uploads
+  namespace: travel
+  labels:
+    app: trek
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi

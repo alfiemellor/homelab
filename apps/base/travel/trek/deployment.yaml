@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trek
+  namespace: travel
+  labels:
+    app: trek
+spec:
+  replicas: 1
+  # TREK is a single-writer SQLite app on ReadWriteOnce volumes, so the old pod
+  # has to stop before the new one migrates the database
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: trek
+  template:
+    metadata:
+      labels:
+        app: trek
+    spec:
+      enableServiceLinks: false
+      # The image is multi-arch, but itinerary extraction and map exports are
+      # CPU-heavy, so prefer the x86 node over the Pis when it has room
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: trek
+          image: mauriceboe/trek:5.0.0@sha256:0c0a8f5b488fc2967248695e04bb000bb177d0b63d3385089d33dca6fde4daf9
+          imagePullPolicy: IfNotPresent
+          # The image's CMD is a script that chowns the volumes as root and then
+          # drops to node (UID 1000) with gosu, which fails when not started as
+          # root. fsGroup handles the ownership instead, so run what the script
+          # would exec, still under the image's dumb-init ENTRYPOINT.
+          workingDir: /app/server
+          args:
+            - node
+            - --require
+            - tsconfig-paths/register
+            - dist/index.js
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: TZ
+              value: "Europe/London"
+            - name: LOG_LEVEL
+              value: "info"
+            # Base URL for OIDC redirects and links in emails
+            - name: APP_URL
+              value: "https://trek.mellor.dev"
+            # CORS; must match the ingress host
+            - name: ALLOWED_ORIGINS
+              value: "https://trek.mellor.dev"
+            # TLS is terminated by ingress-nginx, so trust its X-Forwarded-*
+            - name: TRUST_PROXY
+              value: "1"
+            - name: FORCE_HTTPS
+              value: "true"
+            # Required, not optional: without it TREK generates a key into the
+            # data volume, which would then be lost along with the volume
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trek-secrets
+                  key: ENCRYPTION_KEY
+            # Only read on first boot, when no users exist yet
+            - name: ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: trek-secrets
+                  key: ADMIN_EMAIL
+                  optional: true
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trek-secrets
+                  key: ADMIN_PASSWORD
+                  optional: true
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: uploads
+              mountPath: /app/uploads
+            # Also XDG_CACHE_HOME (/tmp/kf6-cache) for kitinerary-extractor
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          # A first boot, a long migration or a restore at boot gets up to ten
+          # minutes before liveness takes over
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Also checks the database
+          readinessProbe:
+            httpGet:
+              path: /api/health/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: trek-data
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: trek-uploads
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi

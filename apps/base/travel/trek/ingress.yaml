@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trek
+  namespace: travel
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: trek.mellor.dev
+    kubernetes.io/tls-acme: "true"
+    # nginx defaults to 1m; upstream recommends 500m for backup restores
+    nginx.ingress.kubernetes.io/proxy-body-size: 500m
+    # Real-time collaboration is a WebSocket on /ws and MCP on /mcp is SSE,
+    # which nginx would otherwise cut off after 60s of silence
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Already the ingress-nginx default, but /mcp's SSE responses depend on it
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: trek.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: trek
+            port:
+              number: 3000
+  tls:
+  - secretName: trek.mellor.dev
+    hosts:
+    - trek.mellor.dev

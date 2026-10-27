@@ -1,12 +1,12 @@
-# The tunnel is remotely managed, so its routes live in the Cloudflare
-# dashboard rather than in git. This policy is what keeps that safe: whatever
-# the dashboard says, the connector can only reach TREK, DNS, and Cloudflare's
-# edge, never the rest of the cluster, the LAN or the tailnet.
+# The connector serves every public hostname in config.yaml, so this policy is
+# the allow-list of what the internet can be routed to: one rule per app, added
+# in the same PR as its route. Anything else in the cluster, the LAN and the
+# tailnet stays out of reach, even if a route were pointed at it.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: cloudflared
-  namespace: travel
+  namespace: networking
 spec:
   podSelector:
     matchLabels:
@@ -30,13 +30,6 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    - to:
-        - podSelector:
-            matchLabels:
-              app: trek
-      ports:
-        - protocol: TCP
-          port: 3000
     # 7844 is the tunnel itself (QUIC over UDP, HTTP/2 over TCP as fallback);
     # 443 is Cloudflare's API
     - to:
@@ -55,3 +48,14 @@ spec:
           port: 7844
         - protocol: TCP
           port: 443
+    # Public apps
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: travel
+          podSelector:
+            matchLabels:
+              app: trek
+      ports:
+        - protocol: TCP
+          port: 3000

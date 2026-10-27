@@ -2,12 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudflared
-  namespace: travel
+  namespace: networking
   labels:
     app: cloudflared
 spec:
   # Two connectors for the same tunnel, so a node drain or an image update
-  # doesn't take TREK offline
+  # doesn't take the public apps offline
   replicas: 2
   selector:
     matchLabels:
@@ -37,9 +37,13 @@ spec:
         - name: cloudflared
           image: cloudflare/cloudflared:2026.10.4@sha256:c6c7ae1d5dfdcb094ad344ed68ccffc26635c9c6be80965664c33baf064b0515
           imagePullPolicy: IfNotPresent
-          # The image's entrypoint is `cloudflared --no-autoupdate`
+          # The image's entrypoint is `cloudflared --no-autoupdate`. The tunnel
+          # is locally managed, so its routes come from config.yaml in git;
+          # the token only identifies which tunnel this is.
           args:
             - tunnel
+            - --config
+            - /etc/cloudflared/config.yaml
             - --loglevel
             - info
             - --metrics
@@ -51,6 +55,10 @@ spec:
                 secretKeyRef:
                   name: cloudflared-secrets
                   key: TUNNEL_TOKEN
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared
+              readOnly: true
           ports:
             - name: metrics
               containerPort: 2000
@@ -81,3 +89,7 @@ spec:
             capabilities:
               drop:
                 - ALL
+      volumes:
+        - name: config
+          configMap:
+            name: cloudflared-config

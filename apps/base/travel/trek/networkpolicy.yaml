@@ -1,6 +1,7 @@
 # TREK is reachable from the internet through the Cloudflare tunnel, so it is
-# fenced off from everything else at home. The only way in is the cloudflared
-# connector (kubelet probes are always allowed by NetworkPolicy). Out, it only
+# fenced off from everything else at home. The only way in is the shared
+# cloudflared connector in networking (kubelet probes are always allowed by
+# NetworkPolicy). Out, it only
 # needs DNS and HTTPS to the internet for maps, place search and images; LAN,
 # cluster and tailnet ranges are excluded so a compromised pod cannot reach
 # anything else on the network.
@@ -18,7 +19,10 @@ spec:
     - Egress
   ingress:
     - from:
-        - podSelector:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
+          podSelector:
             matchLabels:
               app: cloudflared
       ports:

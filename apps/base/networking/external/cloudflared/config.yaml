@@ -1,0 +1,13 @@
+# Routes for the shared tunnel. Each public hostname maps to an in-cluster
+# Service; anything not listed gets a 404 from cloudflared. Adding a route here
+# also needs:
+#   - an egress rule for the app in networkpolicy.yaml (the connector can only
+#     reach what that policy allows, whatever this file says)
+#   - an ingress rule on the app's side allowing networking/cloudflared
+#   - a DNS record: cloudflared tunnel route dns <tunnel> <hostname>
+#   - a Cloudflare Access application covering the hostname, created BEFORE
+#     the DNS record so the app is never public without it
+ingress:
+  - hostname: trek.mellor.dev
+    service: http://trek.travel.svc.cluster.local:3000
+  - service: http_status:404

@@ -90,6 +90,14 @@ spec:
               value: "345f1f5f4e51ba53d2f2ebf97ea0d3a7b0452e23c45be4474755bcb13adb3bf0"
             - name: OIDC_DISPLAY_NAME
               value: "Cloudflare"
+            # SSO only: no password login or password sign-up, and the login
+            # page sends people straight to Cloudflare. Accounts are created on
+            # first sign-in (SSO Auto-Provisioning), and only emails the Access
+            # policy allows can get that far. Don't pre-create friends'
+            # accounts in Admin > Users: Cloudflare doesn't send email_verified,
+            # so TREK can't link an existing account by email.
+            - name: OIDC_ONLY
+              value: "true"
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

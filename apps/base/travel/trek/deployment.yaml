@@ -79,6 +79,23 @@ spec:
               value: "1"
             - name: FORCE_HTTPS
               value: "true"
+            # SSO through Cloudflare Access, acting as an OIDC provider (an
+            # Access for SaaS app with the same policy as the Access app in
+            # front of TREK). The redirect URI registered there is
+            # APP_URL/api/auth/oidc/callback. Neither the issuer nor the client
+            # ID is a secret; the client secret comes from 1Password.
+            - name: OIDC_ISSUER
+              value: "https://mellor-dev.cloudflareaccess.com/cdn-cgi/access/sso/oidc/345f1f5f4e51ba53d2f2ebf97ea0d3a7b0452e23c45be4474755bcb13adb3bf0"
+            - name: OIDC_CLIENT_ID
+              value: "345f1f5f4e51ba53d2f2ebf97ea0d3a7b0452e23c45be4474755bcb13adb3bf0"
+            - name: OIDC_DISPLAY_NAME
+              value: "Cloudflare"
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: trek-secrets
+                  key: OIDC_CLIENT_SECRET
+                  optional: true
             # Required, not optional: without it TREK generates a key into the
             # data volume, which would then be lost along with the volume
             - name: ENCRYPTION_KEY

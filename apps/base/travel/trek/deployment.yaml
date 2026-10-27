@@ -73,7 +73,8 @@ spec:
             # CORS; must match the ingress host
             - name: ALLOWED_ORIGINS
               value: "https://trek.mellor.dev"
-            # TLS is terminated by ingress-nginx, so trust its X-Forwarded-*
+            # TLS is terminated at Cloudflare's edge, which sets X-Forwarded-*
+            # and cloudflared passes it through, so trust one hop
             - name: TRUST_PROXY
               value: "1"
             - name: FORCE_HTTPS

@@ -1,5 +1,5 @@
 locals {
-  k3s_worker_count = 3
+  k3s_worker_count = 1
 }
 
 resource "random_string" "k3s_token" {

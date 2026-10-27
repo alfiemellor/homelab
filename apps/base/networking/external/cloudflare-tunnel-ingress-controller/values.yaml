@@ -1,0 +1,57 @@
+cloudflare:
+  secretRef:
+    name: cloudflare-tunnel-ingress-controller
+    accountIDKey: account_id
+    tunnelNameKey: tunnel_name
+    apiTokenKey: api_token
+
+ingressClass:
+  name: cloudflare-tunnel
+  isDefaultClass: false
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+# The connectors the controller runs for the tunnel. These are what the
+# internet reaches, so networkpolicy.yaml fences them in.
+cloudflared:
+  # Two connectors on different nodes, so a node drain or an update doesn't
+  # take the public apps offline
+  replicaCount: 2
+  podAntiAffinity: true
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi

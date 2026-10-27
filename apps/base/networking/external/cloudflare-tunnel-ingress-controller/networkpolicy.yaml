@@ -1,0 +1,52 @@
+# The connectors serve every Ingress with ingressClassName: cloudflare-tunnel,
+# so this policy is the allow-list of what the internet can be routed to: one
+# rule per public app, added in the same PR as its Ingress. Anything else in
+# the cluster, the LAN and the tailnet stays out of reach, whatever an Ingress
+# points at.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controlled-cloudflared-connector
+  namespace: networking
+spec:
+  podSelector:
+    matchLabels:
+      app: controlled-cloudflared-connector
+  policyTypes:
+    - Ingress
+    - Egress
+  # Nothing connects to them; they dial out to Cloudflare. The kubelet's probes
+  # are always allowed.
+  ingress: []
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 7844 is the tunnel itself (QUIC over UDP, HTTP/2 over TCP as fallback);
+    # 443 is Cloudflare's API
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 100.64.0.0/10
+      ports:
+        - protocol: UDP
+          port: 7844
+        - protocol: TCP
+          port: 7844
+        - protocol: TCP
+          port: 443
+    # Public apps: none yet

@@ -1,9 +1,16 @@
+# The shared Cloudflare token that external-dns already syncs into networking
+# from the "cloudflare-api-token" 1Password item. The chart reads all three
+# values from one Secret, so that item also carries:
+#   account_id    the Cloudflare account ID
+#   tunnel_name   homelab (the controller creates the tunnel if it is missing)
+# The token itself needs Account > Cloudflare Tunnel > Edit on top of the Zone
+# Read and DNS Edit it already has.
 cloudflare:
   secretRef:
-    name: cloudflare-tunnel-ingress-controller
+    name: cloudflare-api-token
+    apiTokenKey: apiKey
     accountIDKey: account_id
     tunnelNameKey: tunnel_name
-    apiTokenKey: api_token
 
 ingressClass:
   name: cloudflare-tunnel

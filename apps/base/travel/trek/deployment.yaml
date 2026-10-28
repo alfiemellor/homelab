@@ -98,6 +98,12 @@ spec:
             # so TREK can't link an existing account by email.
             - name: OIDC_ONLY
               value: "true"
+            # TREK's login defaults to 24h. Cloudflare doesn't reuse the Access
+            # one-time PIN session for the TREK SSO app, so each TREK login
+            # costs a second emailed code; keep it to once a month. The Access
+            # app's own 1-week session still gates every request.
+            - name: SESSION_DURATION
+              value: "30d"
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

@@ -34,6 +34,10 @@ defaultRules:
 grafana:
   enabled: true
   fullnameOverride: grafana
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   nodeSelector:
     kubernetes.io/hostname: k3s-01
   resources:

@@ -9,7 +9,7 @@ resources:
 helmCharts:
   - name: alloy
     releaseName: alloy
-    version: 1.14.3
+    version: 1.14.4
     repo: https://grafana.github.io/helm-charts
     namespace: monitoring
     valuesFile: values.yaml

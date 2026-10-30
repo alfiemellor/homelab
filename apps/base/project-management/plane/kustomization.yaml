@@ -32,3 +32,148 @@ patches:
         value:
           argocd.argoproj.io/hook: Sync
           argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  # Move every volume off local-path onto Longhorn (Windshift HL-28). Each
+  # template gets a new name, so the recreated StatefulSet makes a new Longhorn
+  # PVC instead of reusing the old one. For pgdb and minio, an initContainer
+  # copies the old PVC across on first start, while the new volume is still
+  # empty. Redis and RabbitMQ only hold caches and queues, so they start empty.
+  - target:
+      kind: StatefulSet
+      name: plane-pgdb-wl
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/metadata/name
+        value: pvc-plane-pgdb-longhorn
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: longhorn
+      - op: replace
+        path: /spec/template/spec/containers/0/volumeMounts/0/name
+        value: pvc-plane-pgdb-longhorn
+      - op: add
+        path: /metadata/annotations
+        value:
+          # volumeClaimTemplates can't be changed in place, so delete and
+          # recreate the StatefulSet. Its old PVC stays behind.
+          argocd.argoproj.io/sync-options: Replace=true,Force=true
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: old-data
+            persistentVolumeClaim:
+              claimName: pvc-plane-pgdb-vol-plane-pgdb-wl-0
+              readOnly: true
+      - op: add
+        path: /spec/template/spec/initContainers
+        value:
+          - name: migrate-data
+            image: busybox:1.38
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                # A new Longhorn volume only holds lost+found. Anything else
+                # means the copy already ran, and copying again would put old
+                # files back over newer ones.
+                if [ -n "$(ls -A /new | grep -vx lost+found)" ]; then
+                  echo "already migrated"
+                  exit 0
+                fi
+                cp -a /old/. /new/
+                echo "copied $(du -sh /new | cut -f1), $(find /new -type f | wc -l) files"
+            volumeMounts:
+              - name: old-data
+                mountPath: /old
+                readOnly: true
+              - name: pvc-plane-pgdb-longhorn
+                mountPath: /new
+  - target:
+      kind: StatefulSet
+      name: plane-minio-wl
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/metadata/name
+        value: pvc-plane-minio-longhorn
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: longhorn
+      - op: replace
+        path: /spec/template/spec/containers/0/volumeMounts/0/name
+        value: pvc-plane-minio-longhorn
+      - op: add
+        path: /metadata/annotations
+        value:
+          # volumeClaimTemplates can't be changed in place, so delete and
+          # recreate the StatefulSet. Its old PVC stays behind.
+          argocd.argoproj.io/sync-options: Replace=true,Force=true
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: old-data
+            persistentVolumeClaim:
+              claimName: pvc-plane-minio-vol-plane-minio-wl-0
+              readOnly: true
+      - op: add
+        path: /spec/template/spec/initContainers
+        value:
+          - name: migrate-data
+            image: busybox:1.38
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                # A new Longhorn volume only holds lost+found. Anything else
+                # means the copy already ran, and copying again would put old
+                # files back over newer ones.
+                if [ -n "$(ls -A /new | grep -vx lost+found)" ]; then
+                  echo "already migrated"
+                  exit 0
+                fi
+                cp -a /old/. /new/
+                echo "copied $(du -sh /new | cut -f1), $(find /new -type f | wc -l) files"
+            volumeMounts:
+              - name: old-data
+                mountPath: /old
+                readOnly: true
+              - name: pvc-plane-minio-longhorn
+                mountPath: /new
+  - target:
+      kind: StatefulSet
+      name: plane-redis-wl
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/metadata/name
+        value: pvc-plane-redis-longhorn
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: longhorn
+      - op: replace
+        path: /spec/template/spec/containers/0/volumeMounts/0/name
+        value: pvc-plane-redis-longhorn
+      - op: add
+        path: /metadata/annotations
+        value:
+          # volumeClaimTemplates can't be changed in place, so delete and
+          # recreate the StatefulSet. Its old PVC stays behind.
+          argocd.argoproj.io/sync-options: Replace=true,Force=true
+  - target:
+      kind: StatefulSet
+      name: plane-rabbitmq-wl
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/metadata/name
+        value: pvc-plane-rabbitmq-longhorn
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: longhorn
+      - op: replace
+        path: /spec/template/spec/containers/0/volumeMounts/0/name
+        value: pvc-plane-rabbitmq-longhorn
+      - op: add
+        path: /metadata/annotations
+        value:
+          # volumeClaimTemplates can't be changed in place, so delete and
+          # recreate the StatefulSet. Its old PVC stays behind.
+          argocd.argoproj.io/sync-options: Replace=true,Force=true

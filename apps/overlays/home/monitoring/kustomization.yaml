@@ -5,6 +5,7 @@ resources:
   - ../../../base/monitoring/kube-prometheus-stack
   - ../../../base/monitoring/sdcard-exporter
   - ../../../base/monitoring/longhorn
+  - ../../../base/monitoring/longhorn-backup-exclusions
   - ../../../base/monitoring/loki
   - ../../../base/monitoring/alloy
   - ../../../base/monitoring/oci-prometheus-datasource

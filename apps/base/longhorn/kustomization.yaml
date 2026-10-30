@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ingress.yaml
   - servicemonitor.yaml
+  - recurringjobs.yaml
 helmCharts:
   - name: longhorn
     repo: https://charts.longhorn.io/

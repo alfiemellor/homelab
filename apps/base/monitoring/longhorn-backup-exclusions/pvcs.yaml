@@ -1,0 +1,41 @@
+# Loki's and Prometheus's PVCs come from their StatefulSets' volume templates,
+# so they can't be labelled through the charts. These copies exist only to add
+# the labels that keep logs and metrics out of Longhorn backups: copying them
+# onto the volume takes it out of the default group the backup jobs use.
+#
+# The spec has to match the live PVC, since most of it can't change after
+# creation. If either volume is expanded, update the size here as well.
+# Prune and Delete are off, so dropping this file never deletes the data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-loki-0
+  labels:
+    recurring-job.longhorn.io/source: enabled
+    recurring-job-group.longhorn.io/no-backup: enabled
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  storageClassName: longhorn-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0
+  labels:
+    recurring-job.longhorn.io/source: enabled
+    recurring-job-group.longhorn.io/no-backup: enabled
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  storageClassName: longhorn-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 12Gi

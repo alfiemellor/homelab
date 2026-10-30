@@ -4,3 +4,11 @@ defaultSettings:
   # Longhorn doesn't upgrade volume engines on its own, so volumes stay on old engines
   # after each chart upgrade. Live-upgrade attached volumes, one per node at a time.
   concurrentAutomaticEngineUpgradePerNodeLimit: 1
+  # Back up detached volumes too (e.g. Minecraft while it's scaled to 0).
+  # Longhorn attaches them just for the job; unchanged data adds almost
+  # nothing to an incremental backup.
+  allowRecurringJobWhileVolumeDetached: true
+# The apps/longhorn-home dataset on TrueNAS, over the LAN. TrueNAS Cloud Sync
+# copies it on to Google Drive.
+defaultBackupStore:
+  backupTarget: nfs://192.168.1.100:/mnt/vol1/apps/longhorn-home

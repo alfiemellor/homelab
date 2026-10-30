@@ -5,6 +5,7 @@ resources:
   - ingress.yaml
   - servicemonitor.yaml
   - recurringjobs.yaml
+  - recurringjob-first-backup.yaml
 helmCharts:
   - name: longhorn
     repo: https://charts.longhorn.io/

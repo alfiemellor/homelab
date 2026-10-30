@@ -1,0 +1,15 @@
+# Temporary: runs the first full backup of the default group once, at 15:00 UTC
+# on 2026-10-30, instead of waiting for the nightly job. Remove after it finishes;
+# Longhorn keeps the backups it made.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-first
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "0 15 30 10 *"
+  retain: 1
+  concurrency: 1
+  groups:
+    - default

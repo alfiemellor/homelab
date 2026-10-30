@@ -56,7 +56,7 @@ spec:
         resources:
           requests:
             memory: "2Gi"
-            cpu: "1000m"
+            cpu: "400m" # TEMP: was 1000m, frees room for Longhorn v1.12.1 instance manager on k3s-01; revert once old engine images are gone
             gpu.intel.com/i915: "1"
           limits:
             memory: "4Gi"

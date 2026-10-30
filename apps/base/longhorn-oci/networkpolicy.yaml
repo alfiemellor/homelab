@@ -1,0 +1,23 @@
+# The chart's longhorn-manager NetworkPolicy only admits Longhorn's own
+# components. k3s on OCI enforces it, so Prometheus gets connection refused on
+# the metrics port. Policies are additive, so this just lets the monitoring
+# namespace scrape it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: longhorn-manager-metrics
+  namespace: longhorn
+spec:
+  podSelector:
+    matchLabels:
+      app: longhorn-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9500

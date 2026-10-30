@@ -1,5 +1,4 @@
-# Attachments, plugins and AI prompt overrides. Default (local-path) class,
-# same as Plane; see postgres.yaml for the block volume note.
+# Attachments, plugins and AI prompt overrides.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -8,6 +7,24 @@ metadata:
   labels:
     app: windshift
 spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Replaces windshift-data (local-path). The deployment's initContainer copies
+# the old volume across on first start; windshift-data is removed once that's
+# been checked (HL-28).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: windshift-data-longhorn
+  namespace: project-management
+  labels:
+    app: windshift
+spec:
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:

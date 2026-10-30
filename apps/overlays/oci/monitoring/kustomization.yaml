@@ -3,3 +3,17 @@ kind: Kustomization
 
 resources:
   - ../../../base/monitoring/kube-prometheus-stack-oci
+  # Longhorn alerts. The dashboard is in the home Grafana, which can point it at
+  # the "Prometheus (OCI)" datasource.
+  - ../../../base/monitoring/longhorn
+patches:
+  # There's no Grafana on this cluster to load the dashboard ConfigMap
+  - target:
+      kind: ConfigMap
+      name: longhorn-dashboard
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: longhorn-dashboard

@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - secret.yaml
   - networkpolicy.yaml
-  - old-local-path-pvcs.yaml
 helmCharts:
   - name: plane-ce
     repo: https://helm.plane.so

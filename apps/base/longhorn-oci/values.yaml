@@ -25,3 +25,8 @@ csi:
   provisionerReplicaCount: 2
   resizerReplicaCount: 2
   snapshotterReplicaCount: 2
+# The apps/longhorn-oci dataset on TrueNAS, over the tailnet. Has to be the
+# tailnet IP: CoreDNS can't resolve *.ts.net. The Tailscale policy only lets
+# tag:oci reach it on tcp:2049. TrueNAS Cloud Sync copies it on to Google Drive.
+defaultBackupStore:
+  backupTarget: nfs://100.121.50.68:/mnt/vol1/apps/longhorn-oci

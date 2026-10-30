@@ -1,0 +1,28 @@
+# Every volume is in the default group unless it opts out, so these back up
+# everything. Times are UTC, and finish before TrueNAS Cloud Sync runs.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-daily
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "0 2 * * *"
+  retain: 7
+  # One volume at a time, to go easy on the small nodes and the tailnet link
+  concurrency: 1
+  groups:
+    - default
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-weekly
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "0 3 * * 0"
+  retain: 4
+  concurrency: 1
+  groups:
+    - default

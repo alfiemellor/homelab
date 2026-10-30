@@ -221,3 +221,22 @@ spec:
             summary: "Volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is faulted"
             description: >-
               No usable replica. The volume is unavailable and its data is at risk right now.
+
+    # ---------------------------------------------------------------------
+    # Backups. State: 0=new, 1=pending, 2=in progress, 3=completed, 4=error,
+    # 5=unknown. Only the OCI cluster has a backup target so far.
+    # ---------------------------------------------------------------------
+    - name: longhorn-backups
+      rules:
+        - alert: LonghornBackupFailed
+          expr: longhorn_backup_state == 4
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Backup {{ $labels.backup }} of {{ $labels.volume }} failed"
+            description: >-
+              Longhorn couldn't write this backup to the backup target. Check the
+              target shows as available in the Longhorn UI. On OCI it's the TrueNAS
+              NFS share over the tailnet, so a Tailscale ACL change or TrueNAS being
+              down shows up here first.

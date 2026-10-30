@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smoke-test
+spec:
+  replicas: 1
+  strategy:
+    # RWO volume: the old pod has to let go before the new one can attach
+    type: Recreate
+  selector:
+    matchLabels:
+      app: smoke-test
+  template:
+    metadata:
+      labels:
+        app: smoke-test
+    spec:
+      # Moved to the other node in a follow-up commit, to check the data
+      # follows the volume
+      nodeSelector:
+        kubernetes.io/hostname: oci-k3s-server
+      containers:
+        - name: smoke-test
+          image: busybox:1.38
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - sh
+            - -c
+            - |
+              if [ -f /data/marker ]; then
+                echo "FOUND on $NODE_NAME: $(cat /data/marker)"
+              else
+                echo "written on $NODE_NAME at $(date -u +%FT%TZ)" > /data/marker
+                sync
+                echo "WROTE on $NODE_NAME: $(cat /data/marker)"
+              fi
+              exec sleep infinity
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              memory: 32Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: smoke-test

@@ -1,0 +1,9 @@
+# Temporary smoke test for Longhorn on OCI (Windshift HL-26). Delete this
+# folder once it has passed; ArgoCD then removes the app, PVC and volume.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: longhorn-smoke-test
+resources:
+  - pvc.yaml
+  - deployment.yaml

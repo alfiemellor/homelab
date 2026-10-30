@@ -29,43 +29,6 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        # One-off move from local-path to Longhorn (HL-28). Copies the old
-        # volume into the new one unless that's already been done, then leaves
-        # a marker so later restarts skip it. Removed with the old PVC.
-        - name: migrate-data
-          image: busybox:1.38
-          command:
-            - sh
-            - -c
-            - |
-              set -e
-              if [ -f /new/.migrated-from-local-path ]; then
-                echo "already migrated"
-                exit 0
-              fi
-              cp -a /old/. /new/
-              date -u +%FT%TZ > /new/.migrated-from-local-path
-              echo "copied $(du -sh /new | cut -f1), $(find /new -type f | wc -l) files"
-          securityContext:
-            # cp -a has to keep each file's owner
-            runAsUser: 0
-            runAsNonRoot: false
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CHOWN
-                - DAC_OVERRIDE
-                - FOWNER
-          volumeMounts:
-            - name: old-data
-              mountPath: /old
-              readOnly: true
-            - name: data
-              mountPath: /new
       containers:
         - name: windshift
           image: ghcr.io/windshiftapp/windshift:v0.9.1@sha256:4dcebe37a9ef3c3ae44351a9975842db384964ce5b883369842ecf010c9d1beb
@@ -196,10 +159,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: windshift-data-longhorn
-        - name: old-data
-          persistentVolumeClaim:
-            claimName: windshift-data
-            readOnly: true
         # The image is FROM scratch, so there is no /tmp to write to otherwise
         - name: tmp
           emptyDir:

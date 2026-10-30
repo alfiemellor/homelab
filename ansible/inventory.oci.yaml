@@ -1,0 +1,11 @@
+# The OCI cluster, kept out of inventory.yaml so playbooks that target
+# `hosts: all` there (k3s-deploy, update, ...) never touch it. The nodes are
+# only reachable over the tailnet, so hosts are their Tailscale names.
+#   ansible-playbook -i inventory.oci.yaml playbooks/longhorn-prereqs.yaml
+all:
+  hosts:
+    oci-k3s-server: {}
+    oci-k3s-worker-1: {}
+  vars:
+    ansible_user: ubuntu
+    ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,34 @@
+# Everything Longhorn needs on a node before it can attach a volume.
+# https://longhorn.io/docs/latest/deploy/install/#installation-requirements
+- name: Install Longhorn node prerequisites
+  hosts: all
+  become: true
+  tasks:
+    # nfs-common is only needed for RWX volumes and backups to an NFS target
+    - name: Install iSCSI and NFS client packages
+      apt:
+        name:
+          - open-iscsi
+          - nfs-common
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Enable and start iscsid
+      systemd:
+        name: iscsid.service
+        enabled: true
+        state: started
+
+    - name: Load iscsi_tcp now
+      modprobe:
+        name: iscsi_tcp
+        state: present
+
+    - name: Load iscsi_tcp on every boot
+      copy:
+        dest: /etc/modules-load.d/iscsi_tcp.conf
+        content: "iscsi_tcp\n"
+        mode: "0644"
+
+- import_playbook: multipath-blacklist.yaml

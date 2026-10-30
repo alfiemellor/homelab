@@ -18,7 +18,7 @@ spec:
       # Moved to the other node in a follow-up commit, to check the data
       # follows the volume
       nodeSelector:
-        kubernetes.io/hostname: oci-k3s-server
+        kubernetes.io/hostname: oci-k3s-worker-1
       containers:
         - name: smoke-test
           image: busybox:1.38

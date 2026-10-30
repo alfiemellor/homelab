@@ -3,9 +3,12 @@
 preUpgradeChecker:
   jobEnabled: false
 persistence:
-  # local-path stays the default until the Plane and Windshift volumes have
-  # been moved across (HL-28), so nothing lands on Longhorn by accident
-  defaultClass: false
+  # New PVCs get replicated, backed-up volumes. k3s still marks its built-in
+  # local-path class as default too (and re-applies that on every server
+  # start), but with two defaults Kubernetes picks the newest, which is this.
+  # Use storageClassName: local-path explicitly for anything that shouldn't be
+  # replicated.
+  defaultClass: true
   # One replica on each node
   defaultClassReplicaCount: 2
 defaultSettings:

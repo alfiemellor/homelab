@@ -209,8 +209,8 @@ spec:
             description: >-
               Running on fewer healthy replicas than requested. Longhorn usually rebuilds on
               its own; if it has not after 30 minutes, a node disk is full or a replica cannot
-              be scheduled. There are no backups configured on this cluster, so a degraded
-              volume is one failure away from data loss.
+              be scheduled. Nightly backups to TrueNAS cover most volumes, but anything
+              written since the last one is one failure away from being lost.
 
         - alert: LonghornVolumeFaulted
           expr: longhorn_volume_robustness == 3
@@ -224,7 +224,7 @@ spec:
 
     # ---------------------------------------------------------------------
     # Backups. State: 0=new, 1=pending, 2=in progress, 3=completed, 4=error,
-    # 5=unknown. Only the OCI cluster has a backup target so far.
+    # 5=unknown. Both clusters back up to TrueNAS.
     # ---------------------------------------------------------------------
     - name: longhorn-backups
       rules:

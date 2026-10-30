@@ -1,0 +1,31 @@
+# Every volume is in the default group unless it opts out (see the
+# recurring-job-group.longhorn.io/no-backup label on Plex transcode, Loki and
+# Prometheus), so new apps are backed up without doing anything. Times are UTC,
+# an hour before OCI's so the two don't share the NFS server, and both finish
+# before TrueNAS Cloud Sync runs.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-daily
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "0 1 * * *"
+  retain: 7
+  # One volume at a time, to go easy on the Pi nodes' SD cards
+  concurrency: 1
+  groups:
+    - default
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-weekly
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "30 1 * * 0"
+  retain: 4
+  concurrency: 1
+  groups:
+    - default

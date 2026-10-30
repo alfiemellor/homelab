@@ -50,6 +50,11 @@ kind: PersistentVolumeClaim
 metadata:
   name: plex-transcode
   namespace: media
+  labels:
+    # Scratch space, so leave it out of Longhorn backups: copying these labels
+    # onto the volume takes it out of the default group the jobs back up
+    recurring-job.longhorn.io/source: enabled
+    recurring-job-group.longhorn.io/no-backup: enabled
 spec:
   accessModes:
     - ReadWriteOnce

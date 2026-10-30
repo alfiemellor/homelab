@@ -6,10 +6,7 @@ metadata:
   labels:
     app: windshift
 spec:
-  # Moving off local-path (HL-28): CNPG can't change an existing volume's
-  # class, so a second instance streams a replica onto Longhorn, gets promoted,
-  # and then this goes back to 1, which removes the old local-path instance.
-  instances: 2
+  instances: 1
   # Longhorn keeps a copy on each node and backs up to TrueNAS, so the
   # database survives losing a node without CNPG needing a second instance
   storage:

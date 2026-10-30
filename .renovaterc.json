@@ -47,7 +47,7 @@
       "separateMultipleMinor": true
     },
     {
-      "description": "Longhorn 1.13 needs Kubernetes 1.34+, but k3s-01 runs 1.31. Hold Longhorn below 1.13 until the control plane upgrade (HOMELAB-7) is done",
+      "description": "Longhorn 1.13 needs Kubernetes 1.34+, but k3s-01 runs 1.31. Hold Longhorn below 1.13 on both clusters (they stay on the same version) until the control plane upgrade (Windshift HL-15) is done",
       "matchDatasources": ["helm"],
       "matchPackageNames": ["longhorn"],
       "allowedVersions": "<1.13.0"

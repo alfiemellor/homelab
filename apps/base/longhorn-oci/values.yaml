@@ -1,0 +1,27 @@
+# Sized for the two OCI nodes (2 OCPU / 12GB each). Replica data lives in the
+# default /var/lib/longhorn on the 100GB boot disk, shared with the OS and etcd.
+preUpgradeChecker:
+  jobEnabled: false
+persistence:
+  # local-path stays the default until the Plane and Windshift volumes have
+  # been moved across (HL-28), so nothing lands on Longhorn by accident
+  defaultClass: false
+  # One replica on each node
+  defaultClassReplicaCount: 2
+defaultSettings:
+  defaultReplicaCount: 2
+  # The default disk is the OS root, so leave enough of it for the OS, images,
+  # logs and etcd. Filling it would evict pods and can break etcd.
+  storageReservedPercentageForDefaultDisk: 30
+  storageOverProvisioningPercentage: 100
+  # Longhorn doesn't upgrade volume engines on its own, so volumes stay on old engines
+  # after each chart upgrade. Live-upgrade attached volumes, one per node at a time.
+  concurrentAutomaticEngineUpgradePerNodeLimit: 1
+# The defaults (3) assume more nodes than there are here
+longhornUI:
+  replicas: 1
+csi:
+  attacherReplicaCount: 2
+  provisionerReplicaCount: 2
+  resizerReplicaCount: 2
+  snapshotterReplicaCount: 2

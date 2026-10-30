@@ -1,0 +1,55 @@
+# The local-path PVCs Plane's StatefulSets used before they moved onto Longhorn
+# (Windshift HL-28). Nothing mounts them any more. They're listed here only so
+# ArgoCD tracks them; the next commit removes this file and ArgoCD prunes
+# them. The spec matches the live PVCs, since it can't change after creation.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plane-pgdb-vol-plane-pgdb-wl-0
+  namespace: project-management
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plane-minio-vol-plane-minio-wl-0
+  namespace: project-management
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plane-redis-vol-plane-redis-wl-0
+  namespace: project-management
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plane-rabbitmq-vol-plane-rabbitmq-wl-0
+  namespace: project-management
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi

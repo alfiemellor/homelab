@@ -20,15 +20,40 @@
         enabled: true
         state: started
 
-    - name: Load iscsi_tcp now
+    # dm_crypt is only used by encrypted volumes, but Longhorn's
+    # KernelModulesLoaded node check fails without it
+    - name: Load kernel modules now
       modprobe:
-        name: iscsi_tcp
+        name: "{{ item }}"
         state: present
+      loop:
+        - iscsi_tcp
+        - dm_crypt
 
-    - name: Load iscsi_tcp on every boot
+    - name: Load kernel modules on every boot
       copy:
-        dest: /etc/modules-load.d/iscsi_tcp.conf
-        content: "iscsi_tcp\n"
+        dest: /etc/modules-load.d/longhorn.conf
+        content: |
+          iscsi_tcp
+          dm_crypt
         mode: "0644"
+
+    - name: Remove the old iscsi_tcp-only module list
+      file:
+        path: /etc/modules-load.d/iscsi_tcp.conf
+        state: absent
+
+    # Longhorn's Multipathd node check fails whenever multipathd is running,
+    # even with the blacklist below. Only turned off where the inventory says
+    # nothing uses multipath; the socket would otherwise start it again.
+    - name: Stop and disable multipathd
+      systemd:
+        name: "{{ item }}"
+        enabled: false
+        state: stopped
+      loop:
+        - multipathd.socket
+        - multipathd.service
+      when: longhorn_disable_multipathd | default(false)
 
 - import_playbook: multipath-blacklist.yaml

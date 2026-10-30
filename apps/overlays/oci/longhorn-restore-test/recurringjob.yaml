@@ -1,0 +1,14 @@
+# Backs up only the source volume below, every 10 minutes, so there's a backup
+# to restore from without waiting for the nightly job
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: restore-test
+  namespace: longhorn
+spec:
+  task: backup
+  cron: "*/10 * * * *"
+  retain: 2
+  concurrency: 1
+  groups:
+    - restore-test

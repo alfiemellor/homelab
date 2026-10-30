@@ -5,6 +5,7 @@ resources:
   - ingress.yaml
   - servicemonitor.yaml
   - networkpolicy.yaml
+  - recurringjobs.yaml
 helmCharts:
   # Keep in step with base/longhorn. Renovate bumps both, and the two clusters
   # should run the same Longhorn version.

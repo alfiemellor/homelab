@@ -19,9 +19,6 @@ envSecrets:
 database:
   type: sqlite
 
-# Turns on the read-only Kubernetes pages under Management > Tools. Its
-# ClusterRole can read every Secret in the cluster (for the Secrets page and
-# overview counts); that's accepted, so keep Homarr's admin login strong.
 rbac:
   enabled: true
 

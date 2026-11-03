@@ -19,6 +19,11 @@ envSecrets:
 database:
   type: sqlite
 
+# Turns on the read-only Kubernetes pages under Management > Tools. The chart's
+# ClusterRole is trimmed in kustomization.yaml.
+rbac:
+  enabled: true
+
 persistence:
   homarrDatabase:
     enabled: true

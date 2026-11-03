@@ -15,3 +15,49 @@ helmCharts:
 resources:
   - onepassworditem.yaml
   - networkpolicy.yaml
+patches:
+  # The chart's ClusterRole can read every Secret in the cluster, only so Homarr
+  # can list and count them by name. Homarr is a third-party image with open
+  # egress, so drop secrets, and the meaningless "use" verb. RBAC can't grant
+  # names without contents, so the Secrets page and the overview's resource
+  # count tiles (fetched in one call that includes secrets) error; the gauges
+  # and every other page work.
+  - target:
+      kind: ClusterRole
+      name: homarr-cluster-role
+    patch: |-
+      - op: replace
+        path: /rules
+        value:
+          - apiGroups: [""]
+            resources: [pods, services, configmaps, persistentvolumeclaims, namespaces, persistentvolumes, nodes]
+            verbs: [get, list, watch]
+          - apiGroups: [apps]
+            resources: [deployments]
+            verbs: [get, list, watch]
+          - apiGroups: [networking.k8s.io]
+            resources: [ingresses]
+            verbs: [get, list, watch]
+          - apiGroups: [metrics.k8s.io]
+            resources: [nodes, pods]
+            verbs: [get, list, watch]
+  # The namespaced Role duplicates the ClusterRole (secrets included). The
+  # long-lived token Secret is unused: Homarr reads the pod's projected token.
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: homarr-role
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: homarr-rolebinding
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: homarr-sa-token

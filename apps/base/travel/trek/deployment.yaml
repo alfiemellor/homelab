@@ -79,9 +79,9 @@ spec:
               value: "1"
             - name: FORCE_HTTPS
               value: "true"
-            # SSO through Cloudflare Access, acting as an OIDC provider (an
-            # Access for SaaS app with the same policy as the Access app in
-            # front of TREK). The redirect URI registered there is
+            # SSO through Cloudflare Access, acting as an OIDC provider (the
+            # "TREK SSO" Access for SaaS app, whose policy decides who can sign
+            # in). The redirect URI registered there is
             # APP_URL/api/auth/oidc/callback. Neither the issuer nor the client
             # ID is a secret; the client secret comes from 1Password.
             - name: OIDC_ISSUER
@@ -96,12 +96,20 @@ spec:
             # policy allows can get that far. Don't pre-create friends'
             # accounts in Admin > Users: Cloudflare doesn't send email_verified,
             # so TREK can't link an existing account by email.
+            #
+            # This is TREK's only gate: there is deliberately no self-hosted
+            # Access app in front of trek.mellor.dev. Cloudflare doesn't reuse
+            # one Access app's one-time PIN session for an Access for SaaS app,
+            # so with both, every login cost two emailed codes.
             - name: OIDC_ONLY
               value: "true"
-            # TREK's login defaults to 24h. Cloudflare doesn't reuse the Access
-            # one-time PIN session for the TREK SSO app, so each TREK login
-            # costs a second emailed code; keep it to once a month. The Access
-            # app's own 1-week session still gates every request.
+            # TREK's login defaults to 24h. Each login costs a Google sign-in
+            # or an emailed one-time PIN from Cloudflare, so keep it to once a
+            # month per browser. This is the only session, so removing someone from the
+            # Access policy stops new logins but not this one. TREK has no
+            # per-user session revoke, so to cut someone off now, delete their
+            # account in Admin > Users or rotate the JWT secret (logs everyone
+            # out).
             - name: SESSION_DURATION
               value: "30d"
             - name: OIDC_CLIENT_SECRET

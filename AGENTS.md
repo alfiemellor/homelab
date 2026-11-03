@@ -170,6 +170,16 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
   assuming a Kubernetes version.
 - OCI cannot resolve `*.ts.net` from CoreDNS; use tailnet IPs in in-cluster config
   that must reach home services.
+- Home pods can't reach tailnet IPs either (the nodes aren't on the tailnet;
+  only the Tailscale operator's proxies are), so e.g. Homarr can't status-ping
+  OCI apps.
+- Homarr's boards, apps and integrations live only in its SQLite database
+  (managed in the UI, not git), so the Longhorn backup of `homarr-database` is
+  the only copy. Keep it backed up.
+- Kustomize leaves `metadata.namespace` unset on Helm output when the chart's
+  templates don't set it (Homarr's don't). Argo's destination namespace covers
+  it, but don't expect `namespace:` in the kustomization to show up in a
+  local render.
 
 ## Validating changes
 

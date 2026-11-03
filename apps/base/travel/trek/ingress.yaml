@@ -1,7 +1,6 @@
 # Published through the Cloudflare tunnel by cloudflare-tunnel-ingress-controller,
 # which also creates the proxied DNS record. TLS ends at Cloudflare's edge, so
-# there is no tls section. Cloudflare Access must cover trek.mellor.dev BEFORE
-# this syncs, or TREK is public with only its own login in front.
+# there is no tls section.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

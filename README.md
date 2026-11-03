@@ -21,7 +21,7 @@ I also run a cluster on Oracle Cloud's free tier. The terraform for this deploys
 - **Downloads:** Sonarr, Radarr, Prowlarr, qBittorrent, qui, scdl
 - **Home automation:** Home Assistant, Matter Server
 - **Finance:** Actual Budget, plus small sync jobs for Trading 212 and Amex
-- **Other apps:** Trilium (notes), TREK (travel), an FTB Evolution Minecraft server
+- **Other apps:** Homarr (dashboard), Trilium (notes), TREK (travel), an FTB Evolution Minecraft server
 - **Platform:** ArgoCD, Longhorn, cert-manager, CloudNativePG, 1Password operator, Tailscale operator, Intel GPU device plugin
 - **Networking:** MetalLB, ingress-nginx (internal and external), external-dns, Cloudflare DDNS and Cloudflare Tunnel
 - **Monitoring:** kube-prometheus-stack (Prometheus and Grafana), Loki, Alloy, an SD card health exporter for the Pis

@@ -1,0 +1,51 @@
+image:
+  repository: ghcr.io/homarr-labs/homarr
+  tag: v2.10.1
+
+# SQLite on a single RWO volume, so the old pod has to stop before the new one
+# can mount it.
+strategyType: Recreate
+
+env:
+  TZ: Europe/London
+  BASE_URL: https://homarr.mellor.dev
+  AUTH_PROVIDERS: credentials
+
+envSecrets:
+  dbEncryption:
+    existingSecret: homarr-secrets
+    key: db-encryption-key
+
+database:
+  type: sqlite
+
+persistence:
+  homarrDatabase:
+    enabled: true
+    storageClassName: longhorn
+    size: 1Gi
+
+ingress:
+  enabled: true
+  ingressClassName: internal
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: homarr.mellor.dev
+    kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: homarr.mellor.dev
+      paths:
+        - path: /
+  tls:
+    - secretName: homarr.mellor.dev
+      hosts:
+        - homarr.mellor.dev
+
+# Next.js plus the Redis it runs inside the container. The image is multi-arch,
+# so it can run on a Pi rather than adding to k3s-01.
+resources:
+  requests:
+    cpu: 50m
+    memory: 384Mi
+  limits:
+    memory: 1Gi

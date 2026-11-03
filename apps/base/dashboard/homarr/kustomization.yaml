@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: dashboard
+
+# The chart's templates don't set metadata.namespace and Kustomize doesn't add
+# it to their output, so they rely on Argo's destination namespace (dashboard).
+helmCharts:
+  - name: homarr
+    releaseName: homarr
+    version: 8.40.1
+    repo: https://homarr-labs.github.io/charts/
+    namespace: dashboard
+    valuesFile: values.yaml
+resources:
+  - onepassworditem.yaml
+  - networkpolicy.yaml
+  - job.yaml
+configMapGenerator:
+  - name: homarr-provision
+    files:
+      - provision/provision.py
+      - provision/board.json

@@ -62,7 +62,9 @@ terraform/                      OCI compartment, VCN, and instances (modules/{co
 3. Reference it from the overlay for the cluster it should run on
    (`apps/overlays/<cluster>/<namespace>/kustomization.yaml`). A new overlay
    directory creates a new Argo app and namespace automatically.
-4. Render it locally before committing (see [Validating changes](#validating-changes)).
+4. If it has a UI, give it a tile on the Homarr board
+   (`apps/base/dashboard/homarr/provision/board.json`).
+5. Render it locally before committing (see [Validating changes](#validating-changes)).
 
 ## Design choices and conventions
 
@@ -170,6 +172,18 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
   assuming a Kubernetes version.
 - OCI cannot resolve `*.ts.net` from CoreDNS; use tailnet IPs in in-cluster config
   that must reach home services.
+- Home pods can't reach tailnet IPs either (the nodes aren't on the tailnet;
+  only the Tailscale operator's proxies are), so the Homarr board doesn't ping
+  OCI apps.
+- **The Homarr board lives in git.** `homarr-provision` (a PostSync hook Job)
+  rewrites the whole `homelab` board from `provision/board.json` on every sync
+  of the dashboard app, so UI edits to that board are lost. Change the JSON
+  instead, or use another board for experiments. It also does Homarr's
+  first-run onboarding, since Homarr can't be set up from files.
+- Kustomize leaves `metadata.namespace` unset on Helm output when the chart's
+  templates don't set it (Homarr's don't). Argo's destination namespace covers
+  it, but don't expect `namespace:` in the kustomization to show up in a
+  local render.
 
 ## Validating changes
 

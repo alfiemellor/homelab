@@ -19,6 +19,9 @@ envSecrets:
 database:
   type: sqlite
 
+rbac:
+  enabled: true
+
 persistence:
   homarrDatabase:
     enabled: true

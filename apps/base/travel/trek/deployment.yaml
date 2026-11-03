@@ -103,9 +103,9 @@ spec:
             # so with both, every login cost two emailed codes.
             - name: OIDC_ONLY
               value: "true"
-            # TREK's login defaults to 24h. Each login costs an emailed
-            # one-time PIN from Cloudflare, so keep it to once a month per
-            # browser. This is the only session, so removing someone from the
+            # TREK's login defaults to 24h. Each login costs a Google sign-in
+            # or an emailed one-time PIN from Cloudflare, so keep it to once a
+            # month per browser. This is the only session, so removing someone from the
             # Access policy stops new logins but not this one. TREK has no
             # per-user session revoke, so to cut someone off now, delete their
             # account in Admin > Users or rotate the JWT secret (logs everyone

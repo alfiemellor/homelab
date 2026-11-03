@@ -15,9 +15,3 @@ helmCharts:
 resources:
   - onepassworditem.yaml
   - networkpolicy.yaml
-  - job.yaml
-configMapGenerator:
-  - name: homarr-provision
-    files:
-      - provision/provision.py
-      - provision/board.json

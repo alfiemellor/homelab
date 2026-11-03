@@ -1,5 +1,5 @@
-# Homarr is only reached through the internal (tailnet) ingress and by the
-# provision Job. Egress stays open on purpose: its status pings hit every
+# Homarr is only reached through the internal (tailnet) ingress. Egress stays
+# open on purpose: its status pings hit every
 # service in the cluster and TrueNAS on the LAN, and widgets (weather,
 # Minecraft status) call out to the internet, so fencing it like TREK would
 # leave the board showing everything as down.
@@ -22,9 +22,6 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/instance: internal-ingress-nginx
-        - podSelector:
-            matchLabels:
-              app: homarr-provision
       ports:
         - protocol: TCP
           port: 7575

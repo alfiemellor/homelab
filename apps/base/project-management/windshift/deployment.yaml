@@ -29,6 +29,35 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
+      # Since 0.9.2 /readyz fails until ATTACHMENT_PATH exists, but the app only
+      # creates it on first upload, so the pod never goes Ready on a volume that
+      # has never had an attachment. The image is FROM scratch (no mkdir), hence
+      # busybox. Creates the other /data dirs too in case they get checked later.
+      initContainers:
+        - name: create-data-dirs
+          image: busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
+          imagePullPolicy: IfNotPresent
+          command:
+            - mkdir
+            - -p
+            - /data/attachments
+            - /data/plugins
+            - /data/prompts
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       containers:
         - name: windshift
           image: ghcr.io/windshiftapp/windshift:0.9.2@sha256:89e307a49febbd374343a811b745827f0113d1a715078741a22be1096db1dd76

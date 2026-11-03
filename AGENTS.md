@@ -176,11 +176,6 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
 - Homarr's boards, apps and integrations live only in its SQLite database
   (managed in the UI, not git), so the Longhorn backup of `homarr-database` is
   the only copy. Keep it backed up.
-- Homarr's Kubernetes view (`rbac.enabled`) uses a ClusterRole that reads
-  every Secret in the cluster. That's a deliberate trade-off for its Secrets
-  page and overview counts, so treat a Homarr compromise as a cluster-wide
-  secret leak. Trimming `secrets` breaks both (they share one API call; see
-  #146).
 - Kustomize leaves `metadata.namespace` unset on Helm output when the chart's
   templates don't set it (Homarr's don't). Argo's destination namespace covers
   it, but don't expect `namespace:` in the kustomization to show up in a

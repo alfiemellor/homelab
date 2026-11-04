@@ -27,14 +27,6 @@
       "automerge": false
     },
     {
-      "description": "Group all image updates together",
-      "matchDatasources": [
-        "docker"
-      ],
-      "groupName": "App Container Images",
-      "groupSlug": "app-images"
-    },
-    {
       "description": "Update busybox and other utility images separately",
       "matchPackageNames": ["busybox"],
       "groupName": "Utility Images",
@@ -53,7 +45,8 @@
       "allowedVersions": "<1.13.0"
     }
   ],
-  "prConcurrentLimit": 2,
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "labels": ["renovate"],
   "assignees": ["alfiemellor"]

@@ -140,7 +140,9 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
 
 ### Dependencies (Renovate)
 - Renovate scans `apps/base/**` and `apps/overlays/**` weekly (Monday before 03:00
-  UTC); container images are grouped into one "app container images" PR.
+  UTC) and opens one PR per container image, so upgrades can be merged
+  independently. PR limits are raised (`prConcurrentLimit: 10`, no hourly limit)
+  so a week's updates all open in the single weekly run instead of trickling in.
   `ansible/` and `terraform/` are ignored.
 - Longhorn is held `< 1.13.0` until the home control plane runs Kubernetes 1.34+
   (tracked as Windshift HL-15). Update the rule in `.renovaterc.json` when that

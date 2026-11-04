@@ -1,7 +1,7 @@
 # Seerr takes TV and film requests and hands them to Sonarr and Radarr, then
-# marks them available once Plex has them. Its settings (Plex, Sonarr/Radarr
-# API keys, users) are entered in the UI and live only in the SQLite database
-# on seerr-config. Single replica only: SQLite on an RWO volume.
+# marks them available once Plex has them. Everything is configured in the UI:
+# users, requests and media state go to Postgres (seerr-pg), while settings
+# (Plex, Sonarr/Radarr API keys) stay in settings.json on seerr-config.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,6 +39,28 @@ spec:
           env:
             - name: TZ
               value: "Europe/London"
+            # Use the CloudNativePG cluster (seerr-pg) instead of the default
+            # SQLite. Host/port/db are deterministic (CloudNativePG -rw
+            # service); only the credentials come from the operator-generated
+            # -app secret.
+            - name: DB_TYPE
+              value: "postgres"
+            - name: DB_HOST
+              value: "seerr-pg-rw"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "seerr"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-pg-app
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-pg-app
+                  key: password
           volumeMounts:
             - name: config
               mountPath: /app/config

@@ -178,8 +178,9 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
 - Homarr's boards, apps and integrations live only in its SQLite database
   (managed in the UI, not git), so the Longhorn backup of `homarr-database` is
   the only copy. Keep it backed up.
-- The same goes for Seerr (`apps/base/media/seerr`): its Plex, Sonarr/Radarr
-  and user settings live only in SQLite on `seerr-config`.
+- Seerr (`apps/base/media/seerr`) is also configured only in its UI: settings
+  and API keys live in `settings.json` on `seerr-config`, while users and
+  requests are in the `seerr-pg` CNPG database. Both Longhorn backups matter.
 - Kustomize leaves `metadata.namespace` unset on Helm output when the chart's
   templates don't set it (Homarr's don't). Argo's destination namespace covers
   it, but don't expect `namespace:` in the kustomization to show up in a

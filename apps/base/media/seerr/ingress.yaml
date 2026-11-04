@@ -1,0 +1,28 @@
+# Tailnet only for now. Opening requests to friends off the tailnet means
+# moving to cloudflare-tunnel with Access in front.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: seerr
+  namespace: media
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: seerr.mellor.dev
+    kubernetes.io/tls-acme: "true"
+spec:
+  ingressClassName: internal
+  rules:
+  - host: seerr.mellor.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: seerr
+            port:
+              number: 5055
+  tls:
+  - secretName: seerr.mellor.dev
+    hosts:
+    - seerr.mellor.dev

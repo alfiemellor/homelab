@@ -1,0 +1,100 @@
+# Seerr takes TV and film requests and hands them to Sonarr and Radarr, then
+# marks them available once Plex has them. Everything is configured in the UI:
+# users, requests and media state go to Postgres (seerr-pg), while settings
+# (Plex, Sonarr/Radarr API keys) stay in settings.json on seerr-config.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seerr
+  namespace: media
+  labels:
+    app: seerr
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: seerr
+  template:
+    metadata:
+      labels:
+        app: seerr
+    spec:
+      # The image runs as its built-in node user (UID 1000).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: seerr
+          image: ghcr.io/seerr-team/seerr:v3.5.1@sha256:d8fab675b55ad293ded98fd71efcfd46054cbad9746534ae1cc4794a88c0b3be
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5055
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/London"
+            # Use the CloudNativePG cluster (seerr-pg) instead of the default
+            # SQLite. Host/port/db are deterministic (CloudNativePG -rw
+            # service); only the credentials come from the operator-generated
+            # -app secret.
+            - name: DB_TYPE
+              value: "postgres"
+            - name: DB_HOST
+              value: "seerr-pg-rw"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "seerr"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-pg-app
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-pg-app
+                  key: password
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          # The endpoint the upstream Docker healthcheck uses; it answers
+          # before first-run setup is done.
+          livenessProbe:
+            httpGet:
+              path: /api/v1/settings/public
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/settings/public
+              port: http
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: seerr-config

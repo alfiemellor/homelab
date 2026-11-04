@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: seerr-pg
+  namespace: media
+  labels:
+    app: seerr
+spec:
+  instances: 1
+  # Longhorn keeps a copy on each node and backs up to TrueNAS, so the
+  # database survives losing a node without CNPG needing a second instance
+  storage:
+    storageClass: longhorn
+    size: 2Gi
+  # With a single instance the PDB can never be satisfied, so it would block
+  # every node drain (e.g. k3s upgrades).
+  enablePDB: false
+  bootstrap:
+    initdb:
+      database: seerr
+      owner: seerr

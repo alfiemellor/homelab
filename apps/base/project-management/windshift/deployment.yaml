@@ -60,7 +60,7 @@ spec:
                 - ALL
       containers:
         - name: windshift
-          image: ghcr.io/windshiftapp/windshift:0.9.2@sha256:89e307a49febbd374343a811b745827f0113d1a715078741a22be1096db1dd76
+          image: ghcr.io/windshiftapp/windshift:0.9.3@sha256:23c1abc5375e53b7355a59c0c36c7f44ba5c0e1b55649a2d6cd5219d7d2982c3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

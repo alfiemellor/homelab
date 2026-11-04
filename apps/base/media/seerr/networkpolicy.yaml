@@ -1,0 +1,31 @@
+# Seerr is only reached through the internal (tailnet) ingress, plus Homarr's
+# status ping and integration. Egress stays open: it signs in through plex.tv,
+# pulls metadata from TMDB, and talks to Plex, Sonarr and Radarr in-cluster.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: seerr
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      app: seerr
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: internal-ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: dashboard
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: homarr
+      ports:
+        - protocol: TCP
+          port: 5055

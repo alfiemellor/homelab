@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/homarr-labs/homarr
-  tag: v2.11.1
+  tag: v2.12.0
 
 # SQLite on a single RWO volume, so the old pod has to stop before the new one
 # can mount it.

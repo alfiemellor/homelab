@@ -10,7 +10,9 @@ metadata:
   labels:
     app: seerr
 spec:
-  replicas: 1
+  # Temporarily 0 so Longhorn detaches seerr-config, whose iSCSI device died
+  # on k3s-04 after the 1.12.2 upgrade; revert once the volume shows detached.
+  replicas: 0
   strategy:
     type: Recreate
   selector:

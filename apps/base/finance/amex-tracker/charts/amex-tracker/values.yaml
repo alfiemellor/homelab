@@ -32,6 +32,12 @@ gocardless:
 app:
   # Sensitive — set via the Secret / OnePasswordItem (existingSecret), not here.
   supplementaryNames: ""
+  # Sensitive — the supplementary cardholder's name as their bank sends it on
+  # transfers (e.g. "TAYLOR S"); set via the Secret like supplementaryNames.
+  payerNames: ""
+  # First day (YYYY-MM-DD) bank transfers count as payments. Empty = bank sync
+  # ingests nothing.
+  bankSyncFrom: ""
   # Optional cards to auto-create on first boot. Leave empty and add cards in the
   # UI / via sync instead (names are never hardcoded).
   cardNames: ""
@@ -39,7 +45,7 @@ app:
 # Provide secrets via a pre-created Secret (e.g. Sealed/External Secrets) instead
 # of templating them from the values above. If set, the chart won't render a Secret.
 # The referenced Secret must contain the AMEX_GOOGLE_*, AMEX_SESSION_SECRET and
-# AMEX_GOCARDLESS_* keys.
+# AMEX_GOCARDLESS_* keys, plus AMEX_PAYER_NAMES for bank sync.
 existingSecret: ""
 
 postgres:
@@ -72,4 +78,6 @@ frontend:
       memory: 128Mi
 
 sync:
-  schedule: "0 */6 * * *" # every 6 hours
+  # Every 8 hours = 3 of GoCardless's 4 free-tier fetches per account per day, leaving
+  # one for a manual "Sync now". Every 6 hours would use all 4 and block manual syncs.
+  schedule: "0 */8 * * *"

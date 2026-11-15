@@ -4,7 +4,7 @@ host: amex.mellor.dev
 
 image:
   backend: alfiemellor/amex-tracker-backend:e1ccc61
-  frontend: alfiemellor/amex-tracker-frontend:e1ccc61
+  frontend: alfiemellor/amex-tracker-frontend:bf6ecb2
 
 ingress:
   className: external

@@ -14,5 +14,6 @@ data:
   # Card product names only (not personal). The supplementary cardholder name(s)
   # and the allow-listed emails are sensitive and live in the Secret instead.
   AMEX_CARD_NAMES: {{ .Values.app.cardNames | quote }}
+  AMEX_BANK_SYNC_FROM: {{ .Values.app.bankSyncFrom | quote }}
   AMEX_GOCARDLESS_MAX_HISTORICAL_DAYS: {{ .Values.gocardless.maxHistoricalDays | quote }}
   AMEX_GOCARDLESS_ACCESS_VALID_FOR_DAYS: {{ .Values.gocardless.accessValidForDays | quote }}

@@ -13,6 +13,13 @@ spec:
       app.kubernetes.io/component: backend
   template:
     metadata:
+      annotations:
+        # envFrom is only read at container start, so hash the config to roll the pod on change.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.existingSecret }}
+        # An external existingSecret (1Password) can't be hashed; it still needs a manual restart.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "amex-tracker.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend

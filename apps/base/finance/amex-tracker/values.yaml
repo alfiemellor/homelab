@@ -29,3 +29,6 @@ postgres:
 
 sync:
   schedule: "0 */12 * * *" # every 12 hours (chart default is every 6)
+
+app:
+  bankSyncFrom: "2026-11-15" # first day Monzo transfers count as repayments

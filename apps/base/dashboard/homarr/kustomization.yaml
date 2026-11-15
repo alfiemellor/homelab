@@ -8,7 +8,7 @@ namespace: dashboard
 helmCharts:
   - name: homarr
     releaseName: homarr
-    version: 8.42.0
+    version: 8.43.0
     repo: https://homarr-labs.github.io/charts/
     namespace: dashboard
     valuesFile: values.yaml

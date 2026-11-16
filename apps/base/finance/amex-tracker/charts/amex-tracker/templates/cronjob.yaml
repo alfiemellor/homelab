@@ -7,6 +7,9 @@ metadata:
     app.kubernetes.io/component: sync
 spec:
   schedule: {{ .Values.sync.schedule | quote }}
+  {{- if .Values.sync.suspend }}
+  suspend: true
+  {{- end }}
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3

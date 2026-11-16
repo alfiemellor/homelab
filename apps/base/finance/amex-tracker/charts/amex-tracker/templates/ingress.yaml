@@ -5,18 +5,22 @@ metadata:
   labels:
     {{- include "amex-tracker.labels" . | nindent 4 }}
   annotations:
+    {{- if .Values.ingress.tls }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
     kubernetes.io/tls-acme: "true"
+    {{- end }}
     external-dns.alpha.kubernetes.io/hostname: {{ .Values.host | quote }}
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
   tls:
     - hosts:
         - {{ .Values.host }}
       secretName: {{ .Values.ingress.tlsSecretName }}
+  {{- end }}
   rules:
     - host: {{ .Values.host }}
       http:

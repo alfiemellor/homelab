@@ -1,6 +1,8 @@
+# Needs Helm 4+ outside Argo CD: the kept predeploy-dumps PVC is a hook, and Helm 3
+# creates hooks with a plain create, so its second upgrade fails "already exists".
 apiVersion: v2
 name: amex-tracker
 description: Amex supplementary-card tracker — backend, frontend, CloudNativePG Postgres, and the sync CronJob.
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "0.1.0"

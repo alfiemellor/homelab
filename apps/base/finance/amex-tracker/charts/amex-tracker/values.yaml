@@ -11,6 +11,7 @@ image:
 
 ingress:
   className: nginx
+  tls: true # false = plain HTTP, no cert-manager annotations (local clusters)
   clusterIssuer: letsencrypt-prod # cert-manager ClusterIssuer name
   tlsSecretName: amex-tracker-tls
   annotations: {} # any extra ingress annotations
@@ -56,6 +57,23 @@ postgres:
   storageSize: 5Gi
   storageClass: "" # "" = cluster default
 
+# pg_dump the database before each release deploys (Helm pre-upgrade / Argo CD PreSync
+# hook); a failed dump stops the deploy. Ignored unless postgres.enabled. Dumps are keyed
+# on image.backend's tag, so pin a version tag: a reused tag (e.g. latest) dumps only once.
+predeployDump:
+  enabled: true
+  image: postgres:18.6-alpine # client major must be >= the CNPG server's
+  keep: 10 # newest dumps kept; older ones are deleted only after a successful dump
+  storageSize: 2Gi
+  storageClass: "" # "" = cluster default
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
 # Only used when postgres.enabled=false (external/managed DB).
 externalDatabaseUrl: ""
 
@@ -81,3 +99,4 @@ sync:
   # Every 8 hours = 3 of GoCardless's 4 free-tier fetches per account per day, leaving
   # one for a manual "Sync now". Every 6 hours would use all 4 and block manual syncs.
   schedule: "0 */8 * * *"
+  suspend: false # true keeps the CronJob rendered but never scheduled (local clusters)

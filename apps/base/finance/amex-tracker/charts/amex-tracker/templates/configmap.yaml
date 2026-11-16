@@ -5,12 +5,13 @@ metadata:
   labels:
     {{- include "amex-tracker.labels" . | nindent 4 }}
 data:
+  {{- $scheme := ternary "https" "http" .Values.ingress.tls }}
   AMEX_AUTH_ENABLED: {{ .Values.auth.enabled | quote }}
-  AMEX_SESSION_HTTPS_ONLY: "true"
-  AMEX_PUBLIC_BASE_URL: "https://{{ .Values.host }}"
-  AMEX_FRONTEND_URL: "https://{{ .Values.host }}"
-  AMEX_GOCARDLESS_REDIRECT_URI: "https://{{ .Values.host }}/api/connections/callback"
-  AMEX_CORS_ORIGINS: "https://{{ .Values.host }}"
+  AMEX_SESSION_HTTPS_ONLY: {{ .Values.ingress.tls | quote }}
+  AMEX_PUBLIC_BASE_URL: "{{ $scheme }}://{{ .Values.host }}"
+  AMEX_FRONTEND_URL: "{{ $scheme }}://{{ .Values.host }}"
+  AMEX_GOCARDLESS_REDIRECT_URI: "{{ $scheme }}://{{ .Values.host }}/api/connections/callback"
+  AMEX_CORS_ORIGINS: "{{ $scheme }}://{{ .Values.host }}"
   # Card product names only (not personal). The supplementary cardholder name(s)
   # and the allow-listed emails are sensitive and live in the Secret instead.
   AMEX_CARD_NAMES: {{ .Values.app.cardNames | quote }}

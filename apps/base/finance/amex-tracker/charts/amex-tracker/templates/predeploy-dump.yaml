@@ -1,0 +1,118 @@
+{{- if and .Values.postgres.enabled .Values.predeployDump.enabled }}
+{{- $name := include "amex-tracker.fullname" . }}
+# Both objects are hooks, so they exist before the Job on the first upgrade that ships them.
+# Argo CD annotations are explicit because Argo ignores every Helm hook once any Argo hook is
+# defined, and treats pre-install and pre-upgrade alike as PreSync on every sync:
+# https://argo-cd.readthedocs.io/en/stable/user-guide/helm/#helm-hooks
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}-predeploy-dumps
+  labels:
+    {{- include "amex-tracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: predeploy-dump
+  annotations:
+    helm.sh/hook: pre-upgrade
+    # Helm 4 otherwise starts the Job first and waits on it, so the PVC is never created.
+    helm.sh/hook-weight: "-1"
+    # An explicit policy that never fires for a healthy PVC: with none, Helm and Argo CD both
+    # default to before-hook-creation, which would delete every dump on the next deploy.
+    helm.sh/hook-delete-policy: hook-failed
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookFailed
+    # Same wave as the Job: Argo waits for a wave to be healthy, and a WaitForFirstConsumer
+    # PVC only binds once the Job's pod uses it.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.predeployDump.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.predeployDump.storageSize }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-predeploy-dump
+  labels:
+    {{- include "amex-tracker.labels" . | nindent 4 }}
+    app.kubernetes.io/component: predeploy-dump
+  annotations:
+    helm.sh/hook: pre-upgrade
+    # Keeps the last Job (and its logs) until the next deploy, so a failed dump can be inspected.
+    helm.sh/hook-delete-policy: before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        {{- include "amex-tracker.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: predeploy-dump
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: dump
+          image: {{ .Values.predeployDump.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TAG
+              # shortcut: the text after the last ":", so a digest-only image keys on its hash.
+              value: {{ regexReplaceAll "[^A-Za-z0-9._-]" (splitList ":" .Values.image.backend | last) "_" | quote }}
+            - name: KEEP
+              value: {{ .Values.predeployDump.keep | quote }}
+            - name: PGHOST
+              value: {{ $name }}-pg-rw
+            - name: PGDATABASE
+              value: {{ .Values.postgres.database | quote }}
+            # Optional: Argo CD runs this on a fresh install too, before CNPG has made the secret.
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "amex-tracker.pgSecret" . }}
+                  key: username
+                  optional: true
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "amex-tracker.pgSecret" . }}
+                  key: password
+                  optional: true
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              if [ -z "${PGPASSWORD:-}" ]; then
+                echo "no database yet (fresh install); nothing to dump"; exit 0
+              fi
+              # Argo CD runs PreSync hooks on every sync (self-heal, config changes), so only
+              # dump when the release's image tag changes; deleting last-tag forces a dump.
+              if [ "$(cat /dumps/last-tag 2>/dev/null || true)" = "$TAG" ]; then
+                echo "already dumped before deploying $TAG; skipping"; exit 0
+              fi
+              f="/dumps/$(date -u +%Y%m%dT%H%M%SZ)-pre-$TAG.dump"
+              trap 'rm -f "$f.part"' EXIT
+              pg_dump -Fc -f "$f.part"
+              [ -s "$f.part" ] || { echo "pg_dump wrote an empty file" >&2; exit 1; }
+              # A full read, not --list: a dump cut off after its TOC passes --list.
+              pg_restore -f /dev/null "$f.part"
+              mv "$f.part" "$f"
+              echo "$TAG" > /dumps/last-tag
+              ls /dumps/*.dump | sort -r | tail -n +"$((KEEP + 1))" | xargs -r rm -f
+              echo "dumped $f"; ls -l /dumps
+          volumeMounts:
+            - name: dumps
+              mountPath: /dumps
+          resources:
+            {{- toYaml .Values.predeployDump.resources | nindent 12 }}
+      volumes:
+        - name: dumps
+          persistentVolumeClaim:
+            claimName: {{ $name }}-predeploy-dumps
+{{- end }}

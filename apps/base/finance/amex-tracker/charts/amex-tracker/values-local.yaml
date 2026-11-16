@@ -1,0 +1,34 @@
+# Local cluster overrides, used by scripts/local-k8s.sh (see README "Local cluster").
+# Layered on values.yaml; production never uses this file.
+
+fullnameOverride: amex-tracker # scripts/local-k8s.sh relies on this name
+
+# *.localhost resolves to 127.0.0.1 without touching /etc/hosts.
+host: amex.localhost
+
+image:
+  # scripts/local-k8s.sh overrides these with content-tagged images it loads into
+  # the node; Never makes a missing load fail loudly instead of pulling from Docker Hub.
+  backend: amex-tracker-backend:local
+  frontend: amex-tracker-frontend:local
+  pullPolicy: Never
+
+ingress:
+  tls: false # no cert-manager locally; plain HTTP
+
+auth:
+  enabled: false # everyone is the local dev owner
+  sessionSecret: local-dev-not-secret
+
+# No GoCardless credentials, so sync.make_client() refuses before any network call,
+# and the CronJob never fires: production's daily GoCardless allowance is shared.
+# Never set real payer names or other bank-sync settings (app.*) in this file.
+gocardless:
+  secretId: ""
+  secretKey: ""
+
+sync:
+  suspend: true
+
+postgres:
+  storageSize: 1Gi

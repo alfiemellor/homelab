@@ -14,6 +14,7 @@ ansible/ansible.cfg
 # Charts pulled locally by `kustomize build --enable-helm`. Argo re-pulls them
 # on every render, so committing them would just vendor a stale copy.
 apps/**/charts/
+!apps/base/finance/amex-tracker/charts/
 
 # Other
 *.DS_Store

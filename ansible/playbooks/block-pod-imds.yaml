@@ -25,6 +25,9 @@
       notify: Save iptables rules
 
   handlers:
-    # Same persistence user_data sets up at first boot
+    # netfilter-persistent (set up by user_data) restores rules.v4 at boot.
+    # Save only the raw table: a full save would freeze k3s's and Tailscale's
+    # live chains into the boot ruleset, and tables missing from the file are
+    # left alone on restore, so the others stay empty as user_data saved them.
     - name: Save iptables rules
-      command: netfilter-persistent save
+      shell: iptables-save -t raw > /etc/iptables/rules.v4

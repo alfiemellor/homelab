@@ -1,0 +1,30 @@
+# OCI only: ansible-playbook -i inventory.oci.yaml playbooks/block-pod-imds.yaml
+#
+# The instances' user_data carries the k3s server token, and OCI's metadata
+# service (169.254.169.254) hands it to anything on the node that asks. Pod
+# traffic is SNAT'd to the node IP, so without this any pod could read the
+# token and join its own server node. Nothing in OCI pods needs IMDS (the OCI
+# cloud controller manager isn't deployed); hostNetwork pods still can reach it.
+- name: Block pods from the OCI instance metadata service
+  hosts: all
+  become: true
+  tasks:
+    # In raw PREROUTING rather than filter FORWARD: k3s's network policy
+    # controller keeps its own FORWARD jump first, and that chain ACCEPTs
+    # traffic from pods a NetworkPolicy allows before a DROP lower down is
+    # reached. Nothing else on these nodes writes to the raw table.
+    - name: Drop pod traffic to IMDS
+      iptables:
+        table: raw
+        chain: PREROUTING
+        action: insert
+        source: 10.42.0.0/16 # k3s default cluster CIDR
+        destination: 169.254.169.254
+        jump: DROP
+        comment: Block pods from OCI IMDS (playbooks/block-pod-imds.yaml)
+      notify: Save iptables rules
+
+  handlers:
+    # Same persistence user_data sets up at first boot
+    - name: Save iptables rules
+      command: netfilter-persistent save

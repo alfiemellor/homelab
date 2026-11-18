@@ -12,6 +12,7 @@ controller:
     externalTrafficPolicy: Local
     annotations:
       metallb.universe.tf/address-pool: default
+      metallb.io/loadBalancerIPs: 192.168.1.200
   ingressClassResource:
     name: external
     default: false

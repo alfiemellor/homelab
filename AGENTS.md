@@ -195,7 +195,8 @@ kustomize build --enable-helm apps/overlays/home/<namespace>   # or apps/overlay
 ```
 
 `--enable-helm` pulls charts into `apps/**/charts/`, which is gitignored; never
-commit it. Also useful:
+commit it, except the intentionally vendored `apps/base/finance/amex-tracker/charts/`.
+Also useful:
 
 - `ansible-playbook -i <inventory> playbooks/<file>.yaml --check --diff` (from `ansible/`)
 - `terraform fmt` / `terraform validate` (plans and applies run in Terraform Cloud)

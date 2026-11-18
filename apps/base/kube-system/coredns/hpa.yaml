@@ -1,0 +1,21 @@
+# CoreDNS is k3s's packaged addon, so k3s owns the Deployment and re-applies
+# its manifest on every server start. That manifest sets no replicas (k3s
+# dropped them so packaged addons can be scaled; k3s-io/k3s#6552), and k3s
+# applies with a three-way merge patch, so it never resets spec.replicas.
+#
+# This HPA pins replicas to 2 without Argo writing to k3s's Deployment:
+# min equals max, and the HPA controller raises replicas to minReplicas without
+# needing metrics. The manifest's hostname topologySpreadConstraint
+# (DoNotSchedule) already puts the two pods on different nodes.
+# Dropping this file leaves replicas where they are; scale back by hand if needed.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: coredns
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: coredns
+  minReplicas: 2
+  maxReplicas: 2

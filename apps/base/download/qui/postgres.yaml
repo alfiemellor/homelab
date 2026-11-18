@@ -10,6 +10,9 @@ spec:
   storage:
     size: 1Gi
     storageClass: longhorn
+  # With a single instance the PDB can never be satisfied, so it would block
+  # every node drain (e.g. k3s upgrades).
+  enablePDB: false
   bootstrap:
     initdb:
       database: qui

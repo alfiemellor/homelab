@@ -3,8 +3,8 @@ fullnameOverride: amex-tracker
 host: amex.mellor.dev
 
 image:
-  backend: alfiemellor/amex-tracker-backend:2.1.0
-  frontend: alfiemellor/amex-tracker-frontend:2.1.0
+  backend: alfiemellor/amex-tracker-backend:2.2.0
+  frontend: alfiemellor/amex-tracker-frontend:2.2.0
 
 ingress:
   className: external

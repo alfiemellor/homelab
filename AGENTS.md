@@ -169,7 +169,10 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
   those playbooks never touch them. Pass `-i inventory.oci.yaml` explicitly.
 - `ansible/group_vars/all.yml:k3s_version` is the **target** version for
   `k3s-upgrade.yaml`, not necessarily what is running. Check the cluster before
-  assuming a Kubernetes version.
+  assuming a Kubernetes version. Kubernetes upgrades one minor at a time, and
+  the playbook refuses a bigger jump: set it to the latest release of the next
+  minor, run, check nodes are Ready and Argo apps Healthy, then repeat. Hosts
+  already at or above the target are skipped, not downgraded.
 - OCI cannot resolve `*.ts.net` from CoreDNS; use tailnet IPs in in-cluster config
   that must reach home services.
 - Home pods can't reach tailnet IPs either (the nodes aren't on the tailnet;

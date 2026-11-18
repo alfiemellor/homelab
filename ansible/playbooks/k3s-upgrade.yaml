@@ -9,6 +9,13 @@
   hosts: all
   become: true
   gather_facts: false
+  # A failed guard on any host stops the whole run, rather than upgrading the
+  # hosts that passed.
+  any_errors_fatal: true
+  vars:
+    # "v1.32.13+k3s1" -> "1.32.13.1", so version tests also order k3s revisions.
+    k3s_target_cmp: "{{ k3s_version[1:] | replace('+k3s', '.') }}"
+    k3s_installed_cmp: "{{ k3s_installed_version[1:] | replace('+k3s', '.') }}"
   tasks:
     - name: Get installed k3s version
       command: k3s --version
@@ -22,25 +29,52 @@
           {{ (k3s_version_raw.stdout | default(''))
              | regex_search('v[0-9]+\.[0-9]+\.[0-9]+\+k3s[0-9]+') | default('', true) }}
 
+    # Only hosts below the target change. Workers already at or above it are
+    # left alone, so the server can be stepped up to them one minor at a time.
+    - name: Decide whether this host needs upgrading
+      set_fact:
+        k3s_upgrade_needed: >-
+          {{ k3s_installed_version | length == 0
+             or k3s_target_cmp is version(k3s_installed_cmp, '>') }}
+
     - name: Show what is installed now
       debug:
         msg: >-
           {{ inventory_hostname }}:
           {{ k3s_installed_version | default('', true) | ternary(k3s_installed_version, 'not installed') }}
           -> target {{ k3s_version }}
+          {{ '' if k3s_upgrade_needed | bool else '(already at or above target, skipping)' }}
 
     # k3s does not support downgrades: the datastore schema is migrated forward
-    # on start and an older binary will not read it back.
+    # on start and an older binary will not read it back. A server above the
+    # target means k3s_version is wrong; newer workers are just skipped above.
     - name: Refuse to downgrade
       assert:
         that:
-          - (k3s_version | regex_search('[0-9]+\.[0-9]+\.[0-9]+'))
-            is version(k3s_installed_version | regex_search('[0-9]+\.[0-9]+\.[0-9]+'), '>=')
+          - k3s_target_cmp is version(k3s_installed_cmp, '>=')
         fail_msg: >-
           {{ inventory_hostname }} runs {{ k3s_installed_version }}, which is newer
           than the target {{ k3s_version }}. Downgrading k3s is not supported --
           raise k3s_version in group_vars/all.yml instead.
-      when: k3s_installed_version | length > 0
+      when:
+        - k3s_installed_version | length > 0
+        - inventory_hostname in groups['master']
+
+    # Kubernetes only supports upgrading one minor version at a time, and the
+    # API removals on the way (e.g. flowcontrol v1beta3 in 1.32) can leave a
+    # control plane that won't start and can't be rolled back.
+    - name: Refuse to skip a minor version
+      assert:
+        that:
+          - k3s_target_cmp.split('.')[0] == k3s_installed_cmp.split('.')[0]
+          - k3s_target_cmp.split('.')[1] | int <= k3s_installed_cmp.split('.')[1] | int + 1
+        fail_msg: >-
+          {{ inventory_hostname }} runs {{ k3s_installed_version }}, and the target
+          {{ k3s_version }} is more than one minor version ahead. Set k3s_version
+          to the next minor release and upgrade one step at a time.
+      when:
+        - k3s_installed_version | length > 0
+        - k3s_upgrade_needed | bool
 
 - name: Upgrade the k3s server
   hosts: master
@@ -51,7 +85,7 @@
         curl -sfL https://get.k3s.io | \
           INSTALL_K3S_VERSION={{ k3s_version }} \
           INSTALL_K3S_EXEC="{{ k3s_server_exec }}" sh -
-      when: k3s_installed_version != k3s_version
+      when: k3s_upgrade_needed | bool
 
     - name: Wait for the API server to become ready
       command: k3s kubectl get --raw /readyz
@@ -79,7 +113,7 @@
   serial: 1
   tasks:
     - name: Roll {{ inventory_hostname }}
-      when: k3s_installed_version != k3s_version
+      when: k3s_upgrade_needed | bool
       block:
         - name: Cordon the node
           command: k3s kubectl cordon {{ inventory_hostname }}

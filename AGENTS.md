@@ -139,10 +139,10 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
   Pis. `k3s-01` is the only big node, so watch its CPU/memory requests.
 
 ### Dependencies (Renovate)
-- Renovate scans `apps/base/**` and `apps/overlays/**` weekly (Monday before 03:00
-  UTC) and opens one PR per container image, so upgrades can be merged
-  independently. PR limits are raised (`prConcurrentLimit: 10`, no hourly limit)
-  so a week's updates all open in the single weekly run instead of trickling in.
+- Renovate scans `apps/base/**` and `apps/overlays/**` with no schedule and opens one
+  PR per container image, so upgrades can be merged independently. PR limits are
+  off (`prConcurrentLimit: 0`, `prHourlyLimit: 0`, both unlimited) so updates
+  open on their own instead of waiting as Rate-Limited on the Dependency Dashboard.
   `ansible/` and `terraform/` are ignored.
 - Longhorn is held `< 1.13.0` until the home control plane runs Kubernetes 1.34+
   (tracked as Windshift HL-15). Update the rule in `.renovaterc.json` when that

@@ -49,7 +49,7 @@ I also run a cluster on Oracle Cloud's free tier. The terraform for this deploys
 - **Nodes:** the home nodes are set up and upgraded with Ansible playbooks; the
   Oracle Cloud nodes are created by Terraform and bootstrap k3s and Tailscale on
   first boot.
-- **Updates:** Renovate opens PRs automatically for new container image and Helm
+- **Updates:** Renovate opens PRs every Monday for new container image and Helm
   chart versions.
 
 ## Layout

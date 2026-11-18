@@ -144,9 +144,6 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
   off (`prConcurrentLimit: 0`, `prHourlyLimit: 0`, both unlimited) so updates
   open on their own instead of waiting as Rate-Limited on the Dependency Dashboard.
   `ansible/` and `terraform/` are ignored.
-- Longhorn is held `< 1.13.0` until the home control plane runs Kubernetes 1.34+
-  (tracked as Windshift HL-15). Update the rule in `.renovaterc.json` when that
-  changes.
 
 ## Gotchas learned the hard way
 

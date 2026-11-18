@@ -81,6 +81,7 @@ alertmanager:
           - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord/webhook-url
             send_resolved: true
   alertmanagerSpec:
+    externalUrl: https://alertmanager.mellor.dev
     secrets:
       - alertmanager-discord
   ingress:
@@ -157,7 +158,21 @@ prometheusOperator:
         memory: 100Mi
 prometheus:
   enabled: true
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      external-dns.alpha.kubernetes.io/hostname: prometheus.mellor.dev
+      kubernetes.io/tls-acme: "true"
+    ingressClassName: internal
+    hosts:
+      - prometheus.mellor.dev
+    tls:
+      - secretName: prometheus.mellor.dev
+        hosts:
+          - prometheus.mellor.dev
   prometheusSpec:
+    externalUrl: https://prometheus.mellor.dev
     replicas: 1
     replicaExternalLabelName: "replica"
     nodeSelector:

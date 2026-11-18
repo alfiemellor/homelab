@@ -4,8 +4,7 @@
     "config:recommended"
   ],
   "timezone": "UTC",
-  "dependencyDashboard": true,
-  "automerge": false,
+  "dependencyDashboardApproval": false,
   "kubernetes": {
     "enabled": true,
     "managerFilePatterns": [
@@ -45,7 +44,7 @@
     }
   ],
   "prConcurrentLimit": 0,
-  "prHourlyLimit": 2,
+  "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "labels": ["renovate"],
   "assignees": ["alfiemellor"]

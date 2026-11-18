@@ -7,6 +7,8 @@ metadata:
     {{- include "amex-tracker.labels" . | nindent 4 }}
 spec:
   instances: {{ .Values.postgres.instances }}
+  # With a single instance the PDB can never be satisfied, so it would block every node drain (e.g. k3s upgrades).
+  enablePDB: {{ gt (int .Values.postgres.instances) 1 }}
   storage:
     size: {{ .Values.postgres.storageSize }}
     {{- with .Values.postgres.storageClass }}

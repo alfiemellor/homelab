@@ -4,9 +4,7 @@
     "config:recommended"
   ],
   "timezone": "UTC",
-  "schedule": [
-    "before 3am on Monday"
-  ],
+  "dependencyDashboardApproval": false,
   "kubernetes": {
     "enabled": true,
     "managerFilePatterns": [
@@ -45,7 +43,7 @@
       "allowedVersions": "<1.13.0"
     }
   ],
-  "prConcurrentLimit": 10,
+  "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "labels": ["renovate"],

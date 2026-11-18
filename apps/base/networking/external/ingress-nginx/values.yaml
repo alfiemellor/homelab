@@ -12,7 +12,6 @@ controller:
     externalTrafficPolicy: Local
     annotations:
       metallb.universe.tf/address-pool: default
-      # Preserve the router's 80/443 forward target during the Envoy Gateway migration.
       metallb.io/loadBalancerIPs: 192.168.1.200
   ingressClassResource:
     name: external

@@ -172,6 +172,8 @@ prometheus:
         hosts:
           - prometheus.mellor.dev
   prometheusSpec:
+    # Alerts' "Source:" links (GeneratorURL) are built from this; the default
+    # is the in-cluster Service address, which a browser can't open.
     externalUrl: https://prometheus.mellor.dev
     replicas: 1
     replicaExternalLabelName: "replica"

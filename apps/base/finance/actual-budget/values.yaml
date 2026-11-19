@@ -6,26 +6,7 @@ strategy:
   type: "Recreate"
 
 ingress:
-  enabled: true
-  className: "internal"
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/hostname: ab.mellor.dev
-    kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: ab.mellor.dev
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: actual-budget
-              port:
-                number: 5006
-  tls: 
-  - secretName: ab.mellor.dev
-    hosts:
-    - ab.mellor.dev
+  enabled: false
 
 resources:
   requests:

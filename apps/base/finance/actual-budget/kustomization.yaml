@@ -8,3 +8,6 @@ helmCharts:
     releaseName: actual-budget
     namespace: finance
     valuesFile: values.yaml
+
+resources:
+  - httproute.yaml

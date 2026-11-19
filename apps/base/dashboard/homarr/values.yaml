@@ -29,20 +29,7 @@ persistence:
     size: 1Gi
 
 ingress:
-  enabled: true
-  ingressClassName: internal
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.alpha.kubernetes.io/hostname: homarr.mellor.dev
-    kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: homarr.mellor.dev
-      paths:
-        - path: /
-  tls:
-    - secretName: homarr.mellor.dev
-      hosts:
-        - homarr.mellor.dev
+  enabled: false
 
 # Next.js plus the Redis it runs inside the container. The image is multi-arch,
 # so it can run on a Pi rather than adding to k3s-01.

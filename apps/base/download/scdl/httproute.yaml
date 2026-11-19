@@ -1,0 +1,27 @@
+# Runs alongside the Ingress until the router's WAN forward moves to the
+# external Gateway; external-dns keeps the record owned by the Ingress until
+# then (same target, so nothing changes).
+#
+# Also on http-scdl because the Ingress serves scdl over plain HTTP
+# (ssl-redirect off). Its 512m body limit and 900s timeouts need nothing here:
+# Envoy streams bodies with no size cap, and the Gateway-wide policies already
+# drop the request timeout and allow 3600s idle.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: scdl
+  namespace: download
+spec:
+  parentRefs:
+    - name: external
+      namespace: networking
+      sectionName: https
+    - name: external
+      namespace: networking
+      sectionName: http-scdl
+  hostnames:
+    - scdl.mellor.dev
+  rules:
+    - backendRefs:
+        - name: scdl
+          port: 8000

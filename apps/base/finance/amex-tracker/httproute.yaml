@@ -1,0 +1,35 @@
+# Replaces the chart's Ingress, which stays until the router's WAN forward
+# moves to the external Gateway; external-dns keeps the record owned by the
+# Ingress until then.
+#
+# Not Cloudflare-proxied, on purpose. The Ingress targets proxied.mellor.dev,
+# but its own record is DNS-only, and Cloudflare answers a DNS-only CNAME to a
+# proxied name in the same zone with the origin IP, so clients have always
+# connected straight to the WAN IP. A DNS-only CNAME to direct.mellor.dev
+# behaves the same. Proxying it for real is a separate change.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: amex-tracker
+  namespace: finance
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  parentRefs:
+    - name: external
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - amex.mellor.dev
+  rules:
+    # API + auth + healthcheck go to the backend, as in the chart's Ingress
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - name: amex-tracker-backend
+          port: 8000
+    - backendRefs:
+        - name: amex-tracker-frontend
+          port: 80

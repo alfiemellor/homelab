@@ -3,6 +3,11 @@
 # and the redirect routes have none. They only admit routes from this
 # namespace, so apps can't attach plain-HTTP routes.
 #
+# The one exception is http-scdl: scdl is served over plain HTTP as well, as
+# its Ingress does. Envoy prefers the exact hostname over the catch-all on the
+# same port, so only scdl.mellor.dev skips the redirect, and only routes from
+# download can attach.
+#
 # The external-dns label opts a Gateway in to --gateway-label-filter.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -73,3 +78,13 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    - name: http-scdl
+      protocol: HTTP
+      port: 80
+      hostname: scdl.mellor.dev
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: download

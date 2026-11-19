@@ -15,3 +15,5 @@ helmCharts:
 
 resources:
   - onepassworditem.yaml
+  - httproute.yaml
+  - networkpolicy.yaml

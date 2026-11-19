@@ -4,7 +4,7 @@
 # namespace, so apps can't attach plain-HTTP routes.
 #
 # The one exception is http-scdl: scdl is served over plain HTTP as well, as
-# its Ingress does. Envoy prefers the exact hostname over the catch-all on the
+# its old Ingress did. Envoy prefers the exact hostname over the catch-all on the
 # same port, so only scdl.mellor.dev skips the redirect, and only routes from
 # download can attach.
 #

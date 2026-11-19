@@ -5,6 +5,6 @@ namespace: home-automation
 resources:
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
+  - httproute.yaml
   - pvc.yaml
   - configmap.yaml

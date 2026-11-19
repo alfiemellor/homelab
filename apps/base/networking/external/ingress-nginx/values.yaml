@@ -12,7 +12,9 @@ controller:
     externalTrafficPolicy: Local
     annotations:
       metallb.universe.tf/address-pool: default
-      metallb.io/loadBalancerIPs: 192.168.1.200
+      # Off .200 (the router's forward target, now the Envoy external
+      # Gateway's); kept running here so rolling back is a router or IP change
+      metallb.io/loadBalancerIPs: 192.168.1.204
   ingressClassResource:
     name: external
     default: false

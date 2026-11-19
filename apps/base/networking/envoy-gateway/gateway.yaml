@@ -50,6 +50,8 @@ metadata:
   labels:
     external-dns: enabled
   annotations:
+    # With the external EnvoyProxy; see envoyproxy.yaml
+    argocd.argoproj.io/sync-wave: "1"
     # external-dns reads target only from the Gateway, not from routes. Without
     # it routes would be published as A records to the LAN LB IP.
     external-dns.alpha.kubernetes.io/target: direct.mellor.dev

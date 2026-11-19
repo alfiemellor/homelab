@@ -1,0 +1,20 @@
+# Runs alongside the Ingress until the router's WAN forward moves to the
+# external Gateway; external-dns keeps the record owned by the Ingress until
+# then (same target, so nothing changes). Envoy Gateway allows websocket
+# upgrades by default, and its Gateway-wide policies cover long streams.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: plex
+  namespace: media
+spec:
+  parentRefs:
+    - name: external
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - plex.mellor.dev
+  rules:
+    - backendRefs:
+        - name: plex
+          port: 32400

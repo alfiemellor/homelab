@@ -1,5 +1,5 @@
-# scdl is reachable from the internet, so only the external ingress-nginx and
-# the external Envoy Gateway that replaces it get in, plus Homarr's status
+# scdl is reachable from the internet, so only the external Envoy
+# Gateway gets in, plus Homarr's status
 # ping of scdl.download.svc:8000. Nothing else in-cluster calls it and there
 # is no ServiceMonitor. Egress stays open: it downloads from SoundCloud.
 apiVersion: networking.k8s.io/v1
@@ -15,12 +15,6 @@ spec:
     - Ingress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: networking
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/instance: external-ingress-nginx
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: networking

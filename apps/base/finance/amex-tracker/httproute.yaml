@@ -1,9 +1,8 @@
-# Replaces the chart's Ingress, which stays until the router's WAN forward
-# moves to the external Gateway; external-dns keeps the record owned by the
-# Ingress until then.
+# Replaces the chart's Ingress, which kustomization.yaml deletes (the chart has
+# no switch for it).
 #
-# Not Cloudflare-proxied, on purpose. The Ingress targets proxied.mellor.dev,
-# but its own record is DNS-only, and Cloudflare answers a DNS-only CNAME to a
+# Not Cloudflare-proxied, on purpose. The old Ingress targeted proxied.mellor.dev,
+# but its own record was DNS-only, and Cloudflare answers a DNS-only CNAME to a
 # proxied name in the same zone with the origin IP, so clients have always
 # connected straight to the WAN IP. A DNS-only CNAME to direct.mellor.dev
 # behaves the same. Proxying it for real is a separate change.

@@ -5,7 +5,6 @@ namespace: download
 resources:
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
   - httproute.yaml
   - networkpolicy.yaml
   - pvc.yaml

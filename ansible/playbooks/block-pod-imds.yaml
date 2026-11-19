@@ -5,6 +5,10 @@
 # traffic is SNAT'd to the node IP, so without this any pod could read the
 # token and join its own server node. Nothing in OCI pods needs IMDS (the OCI
 # cloud controller manager isn't deployed); hostNetwork pods still can reach it.
+#
+# The same address is also the VCN DNS resolver on port 53, which CoreDNS (a
+# pod) forwards to via the node's resolv.conf, so DNS is let through. IMDS is
+# HTTP on port 80 and stays dropped, as does everything else (e.g. NTP on 123).
 - name: Block pods from the OCI instance metadata service
   hosts: all
   become: true
@@ -13,6 +17,11 @@
     # controller keeps its own FORWARD jump first, and that chain ACCEPTs
     # traffic from pods a NetworkPolicy allows before a DROP lower down is
     # reached. Nothing else on these nodes writes to the raw table.
+    #
+    # Each task inserts at the top only if its rule is missing, so the DROP
+    # goes first and the DNS ACCEPTs land above it, whether the node is fresh
+    # or already has the DROP. Keep the DROP's comment unchanged: it's part of
+    # the match, and a new one would add a second DROP beside the old.
     - name: Drop pod traffic to IMDS
       iptables:
         table: raw
@@ -22,6 +31,20 @@
         destination: 169.254.169.254
         jump: DROP
         comment: Block pods from OCI IMDS (playbooks/block-pod-imds.yaml)
+      notify: Save iptables rules
+
+    - name: Let pod DNS through to the VCN resolver
+      iptables:
+        table: raw
+        chain: PREROUTING
+        action: insert
+        source: 10.42.0.0/16
+        destination: 169.254.169.254
+        protocol: "{{ item }}"
+        destination_port: "53"
+        jump: ACCEPT
+        comment: Allow pod DNS to OCI VCN resolver (playbooks/block-pod-imds.yaml)
+      loop: [udp, tcp]
       notify: Save iptables rules
 
   handlers:

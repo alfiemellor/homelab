@@ -1,0 +1,19 @@
+# Websockets need no config: Envoy Gateway enables upgrades by default, and the
+# Gateway's ClientTrafficPolicy keeps idle streams open for 3600s (nginx's old
+# proxy-read/send-timeout annotations).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: home-assistant
+  namespace: home-automation
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - ha.mellor.dev
+  rules:
+    - backendRefs:
+        - name: home-assistant
+          port: 8123

@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: networking
 resources:
   - service.yaml
-  - ingress.yaml
+  - httproute.yaml

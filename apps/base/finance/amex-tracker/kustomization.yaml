@@ -13,6 +13,15 @@ helmCharts:
     namespace: finance
     valuesFile: values.yaml
 
+# The chart always renders an Ingress; the HTTPRoute on the external Gateway
+# serves the host instead.
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: amex-tracker
 resources:
   - onepassworditem.yaml
   - httproute.yaml

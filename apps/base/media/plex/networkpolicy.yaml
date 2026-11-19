@@ -1,6 +1,6 @@
 # Plex is reachable from the internet and has no Service of its own beyond
-# ClusterIP, so clients come in through the external ingress-nginx or the
-# external Envoy Gateway that replaces it. Seerr talks to it directly, and
+# ClusterIP, so clients come in through the external Envoy
+# Gateway. Seerr talks to it directly, and
 # Homarr status-pings it. Tautulli, Sonarr and Radarr set their Plex
 # connection in their UIs, so it could be in-cluster and they are admitted too
 # (Tautulli currently uses plex.mellor.dev, which arrives via the ingress).
@@ -18,12 +18,6 @@ spec:
     - Ingress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: networking
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/instance: external-ingress-nginx
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: networking

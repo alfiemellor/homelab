@@ -18,7 +18,7 @@ sources:
 # the target/hostname annotations (still external-dns.alpha.kubernetes.io/) are ignored
 # and external ingress records get published as A records to the LAN LB IP.
 #
-# Only the ingress-nginx classes. cloudflare-tunnel Ingresses get their DNS from
+# Only the internal ingress-nginx class. cloudflare-tunnel Ingresses get their DNS from
 # cloudflare-tunnel-ingress-controller, which also writes their status; without
 # the filter external-dns would publish a record for the same hostname too.
 #
@@ -27,5 +27,4 @@ sources:
 extraArgs:
   - --enable-legacy-annotation-prefix
   - --ingress-class=internal
-  - --ingress-class=external
   - --gateway-label-filter=external-dns=enabled

@@ -1,6 +1,6 @@
 # amex-tracker is reachable from the internet, so the frontend and backend
-# only take traffic from the external ingress-nginx and the external Envoy
-# Gateway that replaces it, plus Homarr's status ping of the frontend. Nothing
+# only take traffic from the external Envoy
+# Gateway, plus Homarr's status ping of the frontend. Nothing
 # else in-cluster calls them and there is no ServiceMonitor: the sync CronJob
 # talks to Postgres and external APIs directly, not the backend. The selector
 # skips the CNPG pods (instance amex-tracker-pg), so the backend and jobs still
@@ -18,12 +18,6 @@ spec:
     - Ingress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: networking
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/instance: external-ingress-nginx
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: networking

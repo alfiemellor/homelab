@@ -36,13 +36,10 @@ spec:
           # A new tailnet device, so the ingress-nginx one keeps serving until cut-over
           tailscale.com/hostname: home-envoy-internal
 ---
-# Wave 1, after ingress-nginx's external Service (wave 0) has moved off .200.
-# MetalLB 0.16 doesn't retry a Service whose requested IP was taken when another
-# Service later frees it, so if Envoy asked for .200 first it would sit Pending.
-# Argo waits for wave 0 to be healthy, giving MetalLB time to free .200. The
-# external Gateway and everything attached to it share the wave: Envoy Gateway
-# rejects a Gateway whose EnvoyProxy doesn't exist yet, which on a fresh
-# cluster would leave wave 0 Degraded and this never applied.
+# Wave 1, after wave 0. The external Gateway and everything attached to it
+# share the wave: Envoy Gateway rejects a Gateway whose EnvoyProxy doesn't
+# exist yet, which on a fresh cluster would leave wave 0 Degraded and this
+# never applied.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
@@ -76,7 +73,7 @@ spec:
       envoyService:
         name: envoy-external
         type: LoadBalancer
-        # Local keeps the client source IP, as on the ingress-nginx external Service
+        # Local keeps the client source IP, as the old ingress-nginx external Service did
         externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/address-pool: default

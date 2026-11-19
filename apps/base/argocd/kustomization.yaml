@@ -3,8 +3,6 @@ kind: Kustomization
 
 metadata:
   name: argocd
-resources:
-  - ingress.yaml
 helmCharts:
   - name: argo-cd
     repo: https://argoproj.github.io/argo-helm

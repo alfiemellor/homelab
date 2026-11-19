@@ -27,6 +27,9 @@ kind: ClientTrafficPolicy
 metadata:
   name: external
   namespace: networking
+  annotations:
+    # With the external Gateway; see envoyproxy.yaml
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io

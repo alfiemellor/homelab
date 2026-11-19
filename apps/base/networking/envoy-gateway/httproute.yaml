@@ -19,6 +19,9 @@ kind: HTTPRoute
 metadata:
   name: external-https-redirect
   namespace: networking
+  annotations:
+    # With the external Gateway; see envoyproxy.yaml
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   parentRefs:
     - name: external

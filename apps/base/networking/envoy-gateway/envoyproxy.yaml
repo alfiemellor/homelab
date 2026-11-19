@@ -1,7 +1,4 @@
-# Data plane for each Gateway. Envoy defaults to 100m / 512Mi; these match
-# ingress-nginx's requests instead. Two replicas, spread across nodes, so a Pi
-# reboot doesn't drop the Gateway. Both images are multi-arch.
-# Fixed names keep pod names short; each EnvoyProxy must stay exclusive to its
+# Data plane for each Gateway, each EnvoyProxy must stay exclusive to its
 # Gateway to avoid resource-name collisions in the shared networking namespace.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -19,7 +16,7 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 90Mi
+              memory: 100Mi
         pod:
           topologySpreadConstraints:
             - maxSkew: 1
@@ -55,7 +52,7 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 90Mi
+              memory: 100Mi
         pod:
           topologySpreadConstraints:
             - maxSkew: 1

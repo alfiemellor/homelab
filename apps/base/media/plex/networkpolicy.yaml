@@ -3,7 +3,7 @@
 # Gateway. Seerr talks to it directly, and
 # Homarr status-pings it. Tautulli, Sonarr and Radarr set their Plex
 # connection in their UIs, so it could be in-cluster and they are admitted too
-# (Tautulli currently uses plex.mellor.dev, which arrives via the ingress).
+# (Tautulli currently uses plex.mellor.dev, which arrives via the external Envoy Gateway).
 # Egress stays open: it signs in through plex.tv.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

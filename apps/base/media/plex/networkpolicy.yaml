@@ -1,8 +1,10 @@
 # Plex is reachable from the internet and has no Service of its own beyond
-# ClusterIP, so clients (and Tautulli, which uses plex.mellor.dev) come in
-# through the external ingress-nginx or the external Envoy Gateway that
-# replaces it. Seerr talks to it directly, and Homarr status-pings it. Egress
-# stays open: it signs in through plex.tv.
+# ClusterIP, so clients come in through the external ingress-nginx or the
+# external Envoy Gateway that replaces it. Seerr talks to it directly, and
+# Homarr status-pings it. Tautulli, Sonarr and Radarr set their Plex
+# connection in their UIs, so it could be in-cluster and they are admitted too
+# (Tautulli currently uses plex.mellor.dev, which arrives via the ingress).
+# Egress stays open: it signs in through plex.tv.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -32,6 +34,17 @@ spec:
         - podSelector:
             matchLabels:
               app: seerr
+        - podSelector:
+            matchLabels:
+              app: tautulli
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: download
+          podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: [sonarr, radarr]
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: dashboard

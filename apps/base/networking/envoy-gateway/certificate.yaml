@@ -1,0 +1,27 @@
+# One wildcard per Gateway, each with its own key, so a leaked key from one
+# entry point doesn't cover the others.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-internal
+  namespace: networking
+spec:
+  secretName: wildcard-internal-tls
+  dnsNames:
+    - "*.mellor.dev"
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-external
+  namespace: networking
+spec:
+  secretName: wildcard-external-tls
+  dnsNames:
+    - "*.mellor.dev"
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt

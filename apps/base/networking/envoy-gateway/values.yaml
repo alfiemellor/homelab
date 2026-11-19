@@ -1,0 +1,10 @@
+# The chart defaults to 100m / 256Mi, which is a lot to reserve on a 4GB Pi for a
+# controller that only watches a handful of Gateways.
+deployment:
+  envoyGateway:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1024Mi

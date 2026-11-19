@@ -1,0 +1,69 @@
+# Data plane for each Gateway. Envoy defaults to 100m / 512Mi; these match
+# ingress-nginx's requests instead. Two replicas, spread across nodes, so a Pi
+# reboot doesn't drop the Gateway. Both images are multi-arch.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: internal
+  namespace: networking
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 2
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 90Mi
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: internal
+                  gateway.envoyproxy.io/owning-gateway-namespace: networking
+      envoyService:
+        type: LoadBalancer
+        loadBalancerClass: tailscale
+        annotations:
+          # A new tailnet device, so the ingress-nginx one keeps serving until cut-over
+          tailscale.com/hostname: home-envoy-internal
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: external
+  namespace: networking
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 2
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 90Mi
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: external
+                  gateway.envoyproxy.io/owning-gateway-namespace: networking
+      envoyService:
+        type: LoadBalancer
+        # Local keeps the client source IP, as on the ingress-nginx external Service
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/address-pool: default
+          # Temporary: .200 stays on ingress-nginx until the external cut-over
+          # is done, then the router's forward moves here (or this takes .200)
+          metallb.io/loadBalancerIPs: 192.168.1.203

@@ -1,0 +1,75 @@
+# The http listeners have no hostname on purpose: external-dns turns a route
+# without hostnames on a `*.mellor.dev` listener into a `*.mellor.dev` record,
+# and the redirect routes have none. They only admit routes from this
+# namespace, so apps can't attach plain-HTTP routes.
+#
+# The external-dns label opts a Gateway in to --gateway-label-filter.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal
+  namespace: networking
+  labels:
+    external-dns: enabled
+spec:
+  gatewayClassName: envoy
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: internal
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.mellor.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-internal-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external
+  namespace: networking
+  labels:
+    external-dns: enabled
+  annotations:
+    # external-dns reads target only from the Gateway, not from routes. Without
+    # it routes would be published as A records to the LAN LB IP.
+    external-dns.alpha.kubernetes.io/target: direct.mellor.dev
+spec:
+  gatewayClassName: envoy
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: external
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.mellor.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-external-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same

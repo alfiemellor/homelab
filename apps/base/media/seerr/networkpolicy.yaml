@@ -20,6 +20,14 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/instance: internal-ingress-nginx
+        # The internal Envoy Gateway, which takes over from internal-ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: internal
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: dashboard

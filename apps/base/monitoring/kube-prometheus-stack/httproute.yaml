@@ -1,0 +1,53 @@
+# Replaces the chart's nginx Ingresses (disabled in values.yaml). Served by the
+# `internal` Gateway, whose wildcard cert covers these hosts. Hostnames are
+# explicit so external-dns doesn't publish a wildcard record.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - grafana.mellor.dev
+  rules:
+    - backendRefs:
+        - name: grafana
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - alertmanager.mellor.dev
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-stack-alertmanager
+          port: 9093
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - prometheus.mellor.dev
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-stack-prometheus
+          port: 9090

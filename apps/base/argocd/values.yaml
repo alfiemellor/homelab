@@ -1,4 +1,10 @@
 configs:
+  # Envoy terminates TLS with the Gateway's wildcard cert and talks plain HTTP to
+  # argocd-server. Keeping TLS to the backend would need a BackendTLSPolicy that
+  # validates argocd-server's self-signed cert, and ingress-nginx never verified
+  # it anyway.
+  params:
+    server.insecure: true
   cm:
     accounts.claude-mcp: apiKey
     kustomize.buildOptions: --enable-alpha-plugins --enable-helm
@@ -29,3 +35,17 @@ repoServer:
   livenessProbe:
     timeoutSeconds: 5
     failureThreshold: 5
+
+# The chart points the route at the plain HTTP port because server.insecure is
+# set. The argocd CLI's native gRPC doesn't survive the HTTP/1.1 hop to the
+# backend (it didn't through ingress-nginx either), so it falls back to
+# gRPC-web; `argocd login argocd.mellor.dev --grpc-web` skips the retry.
+server:
+  httproute:
+    enabled: true
+    parentRefs:
+      - name: internal
+        namespace: networking
+        sectionName: https
+    hostnames:
+      - argocd.mellor.dev

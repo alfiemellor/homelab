@@ -11,7 +11,7 @@ metadata:
 spec:
   type: LoadBalancer
   # Separate from the WebUI Service on purpose: only the peer port belongs on a
-  # LAN LoadBalancer IP; the UI stays behind the internal ingress.
+  # LAN LoadBalancer IP; the UI stays behind the internal Gateway.
   selector:
     app: qbittorrent
   # Peers show up with their real IPs instead of a node IP, and MetalLB (L2)

@@ -1,0 +1,37 @@
+# No clientIPDetection on purpose. Clients reach both Gateways at L4 (the
+# Tailscale proxy and MetalLB don't add X-Forwarded-For), so the client is the
+# connection's peer, as with ingress-nginx's use-forwarded-headers=false. Setting
+# xForwardedFor at all, even numTrustedHops: 0, makes Envoy Gateway switch off
+# use_remote_address and take the client from the rightmost XFF entry, which any
+# client can forge.
+#
+# Envoy closes a stream after 5 minutes without data, which would cut idle
+# websockets and SSE (Home Assistant, TrueNAS, Windshift); ingress-nginx gives
+# those 3600s.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: internal
+  namespace: networking
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: internal
+  timeout:
+    http:
+      streamIdleTimeout: 3600s
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: external
+  namespace: networking
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: external
+  timeout:
+    http:
+      streamIdleTimeout: 3600s

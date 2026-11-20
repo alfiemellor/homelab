@@ -21,7 +21,7 @@ postgres:
   storageSize: 1Gi
 
 predeployDump:
-  image: postgres:18.7-alpine # preserve the Renovate pin when re-vendoring the chart
+  image: postgres:19.0-alpine # preserve the Renovate pin when re-vendoring the chart
   storageClass: longhorn
 
 sync:

@@ -23,7 +23,7 @@ I also run a cluster on Oracle Cloud's free tier. The terraform for this deploys
 - **Finance:** Actual Budget, plus small sync jobs for Trading 212 and Amex
 - **Other apps:** Homarr (dashboard), Trilium (notes), TREK (travel), an FTB Evolution Minecraft server
 - **Platform:** ArgoCD, Longhorn, cert-manager, CloudNativePG, 1Password operator, Tailscale operator, Intel GPU device plugin
-- **Networking:** MetalLB, ingress-nginx (internal), Envoy Gateway (external, with the internal class being migrated from ingress-nginx), external-dns, Cloudflare DDNS and Cloudflare Tunnel
+- **Networking:** MetalLB, Envoy Gateway (internal and external), external-dns, Cloudflare DDNS and Cloudflare Tunnel
 - **Monitoring:** kube-prometheus-stack (Prometheus and Grafana), Loki, Alloy, an SD card health exporter for the Pis
 
 **Oracle Cloud cluster**

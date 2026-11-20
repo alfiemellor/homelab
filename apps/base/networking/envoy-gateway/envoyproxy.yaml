@@ -33,7 +33,7 @@ spec:
         type: LoadBalancer
         loadBalancerClass: tailscale
         annotations:
-          # A new tailnet device, so the ingress-nginx one keeps serving until cut-over
+          # A dedicated tailnet device for the internal Gateway
           tailscale.com/hostname: home-envoy-internal
 ---
 # Wave 1, after wave 0. The external Gateway and everything attached to it

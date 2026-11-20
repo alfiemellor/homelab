@@ -16,13 +16,7 @@ spec:
     - Ingress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: networking
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/instance: internal-ingress-nginx
-        # The internal Envoy Gateway, which takes over from internal-ingress-nginx
+        # The internal Envoy Gateway
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: networking

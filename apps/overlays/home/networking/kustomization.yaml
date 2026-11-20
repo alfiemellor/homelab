@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - ../../../base/networking/metallb
   - ../../../base/networking/external-dns
-  - ../../../base/networking/internal/ingress-nginx
   - ../../../base/networking/envoy-gateway
   - ../../../base/networking/external/cloudflare-ddns-direct
   - ../../../base/networking/external/cloudflare-ddns-proxied

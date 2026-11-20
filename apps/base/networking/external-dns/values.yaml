@@ -12,19 +12,17 @@ domainFilters:
 policy: sync
 sources:
   - service
-  - ingress
   - gateway-httproute
 # v0.22+ only reads external-dns.kubernetes.io/ annotations by default. Without this,
 # the target/hostname annotations (still external-dns.alpha.kubernetes.io/) are ignored
 # and external ingress records get published as A records to the LAN LB IP.
 #
-# Only the internal ingress-nginx class. cloudflare-tunnel Ingresses get their DNS from
-# cloudflare-tunnel-ingress-controller, which also writes their status; without
-# the filter external-dns would publish a record for the same hostname too.
+# No ingress source: the only home Ingress is trek (cloudflare-tunnel), which gets its DNS
+# from cloudflare-tunnel-ingress-controller, which also writes its status; watching
+# Ingresses here would publish a record for the same hostname too.
 #
 # HTTPRoutes are only published when attached to a Gateway carrying the
 # external-dns=enabled label (apps/base/networking/envoy-gateway/gateway.yaml).
 extraArgs:
   - --enable-legacy-annotation-prefix
-  - --ingress-class=internal
   - --gateway-label-filter=external-dns=enabled

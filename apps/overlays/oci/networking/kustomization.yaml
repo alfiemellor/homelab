@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - ../../../base/networking/oci/ingress-nginx
+  - ../../../base/networking/oci/envoy-gateway
   - ../../../base/networking/oci/external-dns

@@ -1,0 +1,44 @@
+# Replaces the chart's Ingress (disabled in values.yaml), with the same paths and
+# backends as its templates/ingress.yaml. The internal Gateway in networking
+# serves the wildcard certificate. /live/ is a websocket, which Envoy upgrades
+# without configuration; the 5MB upload limit the nginx annotation raised is not
+# needed because Envoy has no request body limit.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: plane
+  namespace: project-management
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - plane.mellor.dev
+  rules:
+    - matches:
+        - path: {type: PathPrefix, value: /}
+      backendRefs:
+        - {name: plane-web, port: 3000}
+    - matches:
+        - path: {type: PathPrefix, value: /api}
+        - path: {type: PathPrefix, value: /auth}
+        - path: {type: PathPrefix, value: /static/}
+      backendRefs:
+        - {name: plane-api, port: 8000}
+    - matches:
+        - path: {type: PathPrefix, value: /live/}
+      backendRefs:
+        - {name: plane-live, port: 3000}
+    - matches:
+        - path: {type: PathPrefix, value: /spaces}
+      backendRefs:
+        - {name: plane-space, port: 3000}
+    - matches:
+        - path: {type: PathPrefix, value: /god-mode}
+      backendRefs:
+        - {name: plane-admin, port: 3000}
+    - matches:
+        - path: {type: PathPrefix, value: /uploads}
+      backendRefs:
+        - {name: plane-minio, port: 9000}

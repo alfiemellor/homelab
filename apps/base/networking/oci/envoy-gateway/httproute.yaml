@@ -1,0 +1,16 @@
+# ingress-nginx forced the redirect with force-ssl-redirect
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: internal-https-redirect
+  namespace: networking
+spec:
+  parentRefs:
+    - name: internal
+      sectionName: http
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

@@ -1,0 +1,26 @@
+# Tailnet only: the internal Gateway in networking serves the wildcard certificate.
+#
+# Envoy needs nothing for the old nginx annotations: it has no request body limit
+# (the 50MB attachment limit is Windshift's own), and the long-lived SSE streams
+# are covered by the Gateway's no-request-timeout BackendTrafficPolicy and
+# 3600s streamIdleTimeout (apps/base/networking/oci/envoy-gateway).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: windshift
+  namespace: project-management
+spec:
+  parentRefs:
+    - name: internal
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - windshift.mellor.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: windshift
+          port: 8080

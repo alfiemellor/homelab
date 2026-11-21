@@ -1,0 +1,8 @@
+# One class for both Gateways; each Gateway picks its own EnvoyProxy (Service
+# type, replicas) through spec.infrastructure.parametersRef.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller

@@ -147,6 +147,16 @@ what they need and blocks private ranges (`10/8`, `172.16/12`, `192.168/16`,
 
 ## Gotchas learned the hard way
 
+- **Longhorn upgrade cleanup:** detach and reattach every volume after an
+  upgrade: attached engines keep old instance managers alive, reserving
+  `guaranteed-instance-manager-cpu` (480m per node here) until empty and starving
+  scheduling. Single-replica `strict-local` volumes (Prometheus, Loki) also need
+  detaching before Longhorn automatically upgrades their engine image.
+- **Temporary scale-to-zero:** use a temporary deny sync window on the `default`
+  AppProject (not in git), then remove it afterwards. Self-heal reverts scaling,
+  and `home-apps` (`apps/argocd/clusters/home.yaml`) reverts Application sync-policy
+  or annotation edits. Scale Prometheus through its Prometheus CR; use
+  `cnpg.io/hibernation` for CNPG clusters.
 - **PVC prune deadlock:** never remove a PVC in the same commit that stops a
   workload mounting it. Argo prunes the PVC first, the `pvc-protection`
   finalizer holds it while the old pod still mounts it, and the sync never gets

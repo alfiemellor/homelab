@@ -1,6 +1,5 @@
 # Envoy's route timeout defaults to 15s for the whole response, which kills SSE
-# and other long responses. ingress-nginx has no total limit (only a read
-# timeout between chunks), so turn it off and leave idle streams to the
+# and other long responses. Turn it off and leave idle streams to the
 # ClientTrafficPolicy's streamIdleTimeout. A route can still set its own.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy

@@ -37,10 +37,11 @@ I also run a cluster on Oracle Cloud's free tier. The terraform for this deploys
   The folder name is also the namespace. Everything auto-syncs from `main`.
 - **Manifests:** each app lives in `apps/base/` as plain YAML and/or a Helm chart
   rendered through Kustomize. Each cluster's overlay picks which of those it runs.
-- **Access:** most apps are only reachable over my tailnet. A few are public,
-  either directly through the external ingress or through a Cloudflare Tunnel
-  with Cloudflare Access in front. DNS for `mellor.dev` is managed automatically
-  and TLS certificates come from Let's Encrypt.
+- **Access:** Envoy Gateway serves both clusters, replacing ingress-nginx. Most
+  apps use the internal Gateway over my tailnet. A few home apps are public,
+  through the external Gateway or a Cloudflare Tunnel with Cloudflare Access
+  in front. DNS for `mellor.dev` is managed automatically and TLS certificates
+  come from Let's Encrypt.
 - **Secrets:** nothing secret is in this repo. The 1Password operator syncs items
   from a 1Password vault into Kubernetes Secrets.
 - **Storage and backups:** app data lives on Longhorn volumes, which are backed up

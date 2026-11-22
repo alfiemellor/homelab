@@ -1,0 +1,36 @@
+# Data plane for the internal Gateway. Replicas spread across the two OCI nodes.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: internal
+  namespace: networking
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        name: envoy-internal
+        replicas: 2
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: internal
+                  gateway.envoyproxy.io/owning-gateway-namespace: networking
+      envoyServiceAccount:
+        name: envoy-internal
+      envoyService:
+        name: envoy-internal
+        type: LoadBalancer
+        loadBalancerClass: tailscale
+        annotations:
+          # Not oci-ingress, which the nginx release still holds until it is removed
+          tailscale.com/hostname: oci-envoy-internal

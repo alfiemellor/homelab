@@ -1,6 +1,6 @@
-# allow-plane-and-ingress only admits this namespace and ingress-nginx. The
-# CloudNativePG operator also has to reach each instance's status endpoint on
-# 8000, or it can't manage the cluster.
+# allow-plane-and-ingress only admits this namespace and the networking namespace
+# (Envoy). The CloudNativePG operator also has to reach each instance's status
+# endpoint on 8000, or it can't manage the cluster.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

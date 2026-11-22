@@ -1,16 +1,11 @@
+# Routed by httproute.yaml instead. The chart still needs appHost for WEB_URL and
+# CORS, and externalTermination for WEB_URL's https scheme (the Gateway holds the
+# certificate, so the chart has none to reference).
 ingress:
-  enabled: true
+  enabled: false
   appHost: plane.mellor.dev
-  ingressClass: internal
-  ingress_annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    external-dns.kubernetes.io/hostname: plane.mellor.dev
-    kubernetes.io/tls-acme: "true"
-    # nginx defaults to 1m, below Plane's 5MB upload limit
-    nginx.ingress.kubernetes.io/proxy-body-size: 5m
 ssl:
-  # Issued by cert-manager from the annotation above
-  tls_secret_name: plane.mellor.dev
+  externalTermination: true
 
 env:
   # Fail the render rather than fall back to the chart's public example keys

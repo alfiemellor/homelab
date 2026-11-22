@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - secret.yaml
   - networkpolicy.yaml
+  - httproute.yaml
 helmCharts:
   - name: plane-ce
     repo: https://helm.plane.so

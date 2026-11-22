@@ -1,0 +1,17 @@
+# No clientIPDetection on purpose, see the home copy in ../../envoy-gateway.
+#
+# Envoy closes a stream after 5 minutes without data, which would cut idle SSE
+# (Windshift) and Plane's websocket; ingress-nginx gave those 3600s.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: internal
+  namespace: networking
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: internal
+  timeout:
+    http:
+      streamIdleTimeout: 3600s

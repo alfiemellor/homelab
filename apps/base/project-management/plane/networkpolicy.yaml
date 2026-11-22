@@ -1,5 +1,5 @@
 # Postgres, Redis and RabbitMQ keep the chart's default credentials, so only
-# Plane itself and ingress-nginx may connect to anything here.
+# Plane itself and the Envoy Gateway proxies may connect to anything here.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

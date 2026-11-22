@@ -12,3 +12,13 @@ txtOwnerId: "external-dns-oci"
 domainFilters:
   - "mellor.dev"
 policy: sync
+# Listing sources replaces the chart's default of service + ingress. There is no
+# ingress source on purpose: HTTPRoutes are the only thing published, so a stray
+# Ingress can't publish a second record for a hostname. Routes only count when
+# attached to a Gateway carrying the external-dns=enabled label
+# (apps/base/networking/oci/envoy-gateway/gateway.yaml).
+sources:
+  - service
+  - gateway-httproute
+extraArgs:
+  - --gateway-label-filter=external-dns=enabled

@@ -28,7 +28,7 @@ I also run a cluster on Oracle Cloud's free tier. The terraform for this deploys
 
 **Oracle Cloud cluster**
 - **Project management:** Windshift, Plane (evaluating both currently)
-- **Platform:** Longhorn, cert-manager, CloudNativePG, 1Password operator, Tailscale operator, ingress-nginx, external-dns, Prometheus (shown in the home Grafana)
+- **Platform:** Longhorn, cert-manager, CloudNativePG, 1Password operator, Tailscale operator, Envoy Gateway, external-dns, Prometheus (shown in the home Grafana)
 
 ## How it works
 

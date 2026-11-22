@@ -74,7 +74,7 @@ spec:
             # WebAuthn RP ID from it.
             - name: BASE_URL
               value: "https://windshift.mellor.dev"
-            # TLS is terminated by ingress-nginx, so trust its X-Forwarded-*
+            # TLS is terminated by Envoy Gateway, so trust its X-Forwarded-*
             - name: USE_PROXY
               value: "true"
             # Built-in MCP server at /mcp (streamable HTTP). With BASE_URL set

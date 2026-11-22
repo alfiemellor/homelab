@@ -6,8 +6,8 @@
 # client can forge.
 #
 # Envoy closes a stream after 5 minutes without data, which would cut idle
-# websockets and SSE (Home Assistant, TrueNAS, Windshift); ingress-nginx gives
-# those 3600s.
+# websockets and SSE (Home Assistant, TrueNAS, Windshift); the old ingress-nginx
+# gave those 3600s.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:

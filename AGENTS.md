@@ -87,13 +87,14 @@ terraform/                      OCI compartment, VCN, and instances (modules/{co
   them accurate when you change the thing they explain.
 
 ### Exposure / ingress
-Pick the ingress class by who should reach the app:
+Envoy Gateway serves HTTPRoutes on both clusters; ingress-nginx is retired.
+Pick the Gateway or tunnel IngressClass by who should reach the app:
 
-| Class | Cluster | Reachable from | Notes |
+| Gateway / IngressClass | Cluster | Reachable from | Notes |
 | --- | --- | --- | --- |
-| `internal` (default) | home, oci | Tailnet only (Tailscale LoadBalancer) | HTTPRoute on the Envoy `internal` Gateway in `networking` (home and oci each have their own). cert-manager `letsencrypt` ClusterIssuer; external-dns publishes `<host>.mellor.dev` to the tailnet IP |
-| `external` | home | Internet via an HTTPRoute (explicit `hostnames`, `sectionName: https`) on the Envoy `external` Gateway in `networking`, which holds `192.168.1.200` (the router's WAN 80/443 forward). There is no `external` IngressClass any more | The Gateway carries `external-dns.alpha.kubernetes.io/target: direct.mellor.dev` (kept current by `cloudflare-ddns-direct`) and serves cert-manager wildcard TLS |
-| `cloudflare-tunnel` | home | Internet via Cloudflare Tunnel | No `tls:` block (TLS ends at Cloudflare). DNS comes from the tunnel controller, not external-dns. **Cloudflare Access must cover the hostname before the Ingress syncs**, unless the app's own login is SSO-only through an Access for SaaS app (TREK; see `OIDC_ONLY` in `apps/base/travel/trek/deployment.yaml` for why the two don't stack). Pair with a restrictive NetworkPolicy (see `apps/base/travel/trek/networkpolicy.yaml`) |
+| `internal` Gateway | home, oci | Tailnet only (Tailscale LoadBalancer) | HTTPRoute on the Envoy `internal` Gateway in `networking` (home and oci each have their own). cert-manager `letsencrypt` ClusterIssuer; external-dns publishes `<host>.mellor.dev` to the tailnet IP |
+| `external` Gateway | home | Internet via an HTTPRoute (explicit `hostnames`, `sectionName: https`) on the Envoy `external` Gateway in `networking`, which holds `192.168.1.200` (the router's WAN 80/443 forward). | The Gateway carries `external-dns.alpha.kubernetes.io/target: direct.mellor.dev` (kept current by `cloudflare-ddns-direct`) and serves cert-manager wildcard TLS |
+| `cloudflare-tunnel` IngressClass | home | Internet via Cloudflare Tunnel | No `tls:` block (TLS ends at Cloudflare). DNS comes from the tunnel controller, not external-dns. **Cloudflare Access must cover the hostname before the Ingress syncs**, unless the app's own login is SSO-only through an Access for SaaS app (TREK; see `OIDC_ONLY` in `apps/base/travel/trek/deployment.yaml` for why the two don't stack). Pair with a restrictive NetworkPolicy (see `apps/base/travel/trek/networkpolicy.yaml`) |
 
 external-dns still reads the legacy `external-dns.alpha.kubernetes.io/` annotation
 prefix (enabled via `--enable-legacy-annotation-prefix`).

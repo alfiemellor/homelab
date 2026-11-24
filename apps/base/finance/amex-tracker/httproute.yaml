@@ -1,18 +1,19 @@
 # Replaces the chart's Ingress, which kustomization.yaml deletes (the chart has
 # no switch for it).
 #
-# Not Cloudflare-proxied, on purpose. The old Ingress targeted proxied.mellor.dev,
-# but its own record was DNS-only, and Cloudflare answers a DNS-only CNAME to a
-# proxied name in the same zone with the origin IP, so clients have always
-# connected straight to the WAN IP. A DNS-only CNAME to direct.mellor.dev
-# behaves the same. Proxying it for real is a separate change.
+# Cloudflare-proxied, so the record answers with Cloudflare's IPs rather than
+# the WAN IP. external-dns still takes the target (direct.mellor.dev) from the
+# Gateway; Cloudflare follows that CNAME to reach the origin. Needs the zone's
+# SSL/TLS mode at Full (strict): the origin serves the wildcard cert, and
+# Flexible would fetch port 80, where the Gateway redirects to HTTPS in a loop.
+# Envoy now sees Cloudflare's IPs as the client; nothing here keys on them.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: amex-tracker
   namespace: finance
   annotations:
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
   parentRefs:
     - name: external

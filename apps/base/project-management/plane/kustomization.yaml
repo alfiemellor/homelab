@@ -8,7 +8,7 @@ resources:
 helmCharts:
   - name: plane-ce
     repo: https://helm.plane.so
-    version: 1.9.1
+    version: 1.9.2
     releaseName: plane
     namespace: project-management
     valuesFile: values.yaml

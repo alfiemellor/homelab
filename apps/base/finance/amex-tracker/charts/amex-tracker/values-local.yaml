@@ -14,6 +14,7 @@ image:
   pullPolicy: Never
 
 ingress:
+  className: nginx
   tls: false # no cert-manager locally; plain HTTP
 
 auth:

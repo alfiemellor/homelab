@@ -1,7 +1,7 @@
 # Overrides the generated resource name prefix (e.g. "amex-tracker").
 fullnameOverride: ""
 
-# Public hostname — DNS must point at your nginx ingress controller.
+# Public hostname — DNS must point at your ingress controller or external gateway.
 host: amex-tracker.example.com
 
 image:
@@ -10,7 +10,10 @@ image:
   pullPolicy: IfNotPresent
 
 ingress:
-  className: nginx
+  enabled: true # false = route externally, e.g. with Gateway API
+  className: "" # empty = use the cluster default IngressClass
+  # tls also controls app HTTPS URLs and secure cookies, even when enabled=false.
+  # Match the external route's TLS setting when routing outside this chart.
   tls: true # false = plain HTTP, no cert-manager annotations (local clusters)
   clusterIssuer: letsencrypt-prod # cert-manager ClusterIssuer name
   tlsSecretName: amex-tracker-tls
@@ -62,7 +65,7 @@ postgres:
 # on image.backend's tag, so pin a version tag: a reused tag (e.g. latest) dumps only once.
 predeployDump:
   enabled: true
-  image: postgres:19.0-alpine # client major must be >= the CNPG server's
+  image: postgres:18.6-alpine # client major must be >= the CNPG server's
   keep: 10 # newest dumps kept; older ones are deleted only after a successful dump
   storageSize: 2Gi
   storageClass: "" # "" = cluster default

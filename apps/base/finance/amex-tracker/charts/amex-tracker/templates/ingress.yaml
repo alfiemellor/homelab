@@ -1,3 +1,4 @@
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -14,7 +15,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . | quote }}
+  {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
     - hosts:
@@ -41,3 +44,4 @@ spec:
                 name: {{ include "amex-tracker.fullname" . }}-frontend
                 port:
                   number: 80
+{{- end }}

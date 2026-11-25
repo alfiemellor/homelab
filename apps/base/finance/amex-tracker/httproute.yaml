@@ -1,5 +1,4 @@
-# Replaces the chart's Ingress, which kustomization.yaml deletes (the chart has
-# no switch for it).
+# Replaces the chart's Ingress, disabled via ingress.enabled in values.yaml.
 #
 # Cloudflare-proxied, so the record answers with Cloudflare's IPs rather than
 # the WAN IP. external-dns still takes the target (direct.mellor.dev) from the

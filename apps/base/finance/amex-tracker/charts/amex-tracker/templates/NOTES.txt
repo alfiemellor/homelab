@@ -2,9 +2,11 @@ amex-tracker ({{ .Release.Name }}) deployed.
 
 Next steps:
 
-1. DNS — point {{ .Values.host }} at your nginx ingress controller's external IP/LB.
+1. DNS — point {{ .Values.host }} at your ingress controller or external gateway's IP/LB.
 
-{{ if .Values.ingress.tls -}}
+{{ if not .Values.ingress.enabled -}}
+2. Routing — configure your external route and TLS to match ingress.tls={{ .Values.ingress.tls }}.
+{{- else if .Values.ingress.tls -}}
 2. TLS — cert-manager will issue a certificate into secret
    "{{ .Values.ingress.tlsSecretName }}" via ClusterIssuer "{{ .Values.ingress.clusterIssuer }}"
    (can take a minute on first install).
@@ -22,7 +24,9 @@ Next steps:
 
 Handy checks:
   kubectl get pods   -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- if .Values.ingress.enabled }}
   kubectl get ingress {{ include "amex-tracker.fullname" . }}
+{{- end }}
 {{- if .Values.postgres.enabled }}
   kubectl get cluster {{ include "amex-tracker.fullname" . }}-pg   # CloudNativePG
 {{- end }}

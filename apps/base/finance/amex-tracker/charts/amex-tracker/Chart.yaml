@@ -4,5 +4,5 @@ apiVersion: v2
 name: amex-tracker
 description: Amex supplementary-card tracker — backend, frontend, CloudNativePG Postgres, and the sync CronJob.
 type: application
-version: 0.2.1
+version: 0.2.2
 appVersion: "0.1.0"

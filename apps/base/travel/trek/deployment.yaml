@@ -42,7 +42,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: trek
-          image: mauriceboe/trek:5.2.0@sha256:ca317266c71e79bc58123f49e5ddbf2b8549a255f01a73d510b9a18b5ef135b2
+          image: mauriceboe/trek:5.2.1@sha256:7935eeb96db3202b5af896951fd96379d6eb4d3608ce93a1f2e8f850e10a2257
           imagePullPolicy: IfNotPresent
           # The image's CMD is a script that chowns the volumes as root and then
           # drops to node (UID 1000) with gosu, which fails when not started as
